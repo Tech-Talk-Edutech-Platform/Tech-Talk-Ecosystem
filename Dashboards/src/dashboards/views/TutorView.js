@@ -12,6 +12,7 @@ import UpcomingClasses from "../../components/UpcomingClasses";
 import RaiseIssue from "./RaiseIssue"; // adjust path
 
 import { supabase } from "../../supabase";
+import QuickActions2 from "../../components/QuickActions2";
 
 export default function TutorView({ userId, stats: initialStats = {}, user, fetchAll }) {
   // Ensure default values to avoid undefined
@@ -91,8 +92,10 @@ export default function TutorView({ userId, stats: initialStats = {}, user, fetc
 
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 xl:col-span-5 flex flex-col gap-8">
+          <QuickActions2 userId={userId} role="tutor" />
            <ClassList tutorId={userId} />
            <StudentAssignments tutorId={userId} />
+           
         </div>
         <div className="col-span-12 lg:col-span-7 xl:col-span-4 flex flex-col gap-8">
            <StudentList tutorId={userId} />

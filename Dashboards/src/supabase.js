@@ -13,6 +13,9 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // // Update this part:
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: false, 
+    // persistSession: false, 
+    persistSession: true,
+    autoRefreshToken: true,
+    storage: localStorage,
   }
 })
