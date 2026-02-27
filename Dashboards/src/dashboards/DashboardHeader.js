@@ -31,7 +31,7 @@ export default function DashboardHeader({ user, role }) {
   };
 
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/80 backdrop-blur-md p-6 rounded-[32px] border border-white/20 shadow-xl shadow-purple-200/20">
+    <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/80 backdrop-blur-md p-2 rounded-[30px] border border-white/20 shadow-xl shadow-grey-200/20">
       
       {/* 1. BRAND & SEARCH */}
       {/* <div className="flex items-center gap-6 flex-1">
@@ -85,12 +85,12 @@ export default function DashboardHeader({ user, role }) {
   </div> */}
 
   <div className="hidden lg:flex items-center max-w-md relative group">
-    <Search className="absolute left-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
+    {/* <Search className="absolute left-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={18} />
     <input 
       type="text" 
       placeholder="Search anything..." 
       className="w-full bg-slate-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
-    />
+    /> */}
   </div>
 </div>
 

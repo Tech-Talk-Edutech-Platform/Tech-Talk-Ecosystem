@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { BookOpen, CheckCircle, Star, Clock } from "lucide-react"; 
 import StatCard from "../../components/StatCard";
-import ClassList from "../../components/ClassList"; // Shows "My Lessons"
+// import ClassList from "../../components/ClassList"; // Shows "My Lessons"
 import StudentAssignments from "../../components/StudentAssignments"; // Shows "My Homework"
 import Messages from "../../Utils/fetchMessage"; // Chat
 import UpcomingClasses from "../../components/UpcomingClasses";
 import QuickActions2 from "../../components/QuickActions2";
 import { supabase } from "../../supabase";
+import QuickActions from "../../components/QuickActions";
 
 export default function StudentView({ userId, initialStats = {} }) {
   const [stats, setStats] = useState({
@@ -74,8 +75,9 @@ export default function StudentView({ userId, initialStats = {} }) {
       <div className="grid grid-cols-12 gap-8">
         {/* LEFT COLUMN */}
         <div className="col-span-12 xl:col-span-5 flex flex-col gap-8">
-           <ClassList studentId={userId} role="student" />
-           <StudentAssignments studentId={userId} role="student" />
+           {/* <ClassList studentId={userId} role="student" /> */}
+           {/* <StudentAssignments studentId={userId} role="student" /> */}
+           <QuickActions2 userId={userId} role="student" />
         </div>
         
         {/* MIDDLE COLUMN */}
@@ -86,7 +88,7 @@ export default function StudentView({ userId, initialStats = {} }) {
         
         {/* RIGHT COLUMN */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-3 flex flex-col gap-8">
-           <QuickActions2 userId={userId} role="student" />
+           <QuickActions userId={userId} role="student" />
           
         </div>
       </div>

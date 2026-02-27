@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Clock, Users, AlertCircle } from "lucide-react"; 
 import StatCard from "../../components/StatCard";
-import ClassList from "../../components/ClassList";
+// import ClassList from "../../components/ClassList";
 import StudentList from "../../components/StudentProgress";
 import QuickActions from "../../components/QuickActions";
-import StudentAssignments from "../../components/StudentAssignments";
-import Messages from "../../Utils/fetchMessage";
+// import StudentAssignments from "../../components/StudentAssignments";
+// import Messages from "../../Utils/fetchMessage";
 import UpcomingClasses from "../../components/UpcomingClasses";
 
 // ADD: Import RaiseIssue
@@ -93,13 +93,13 @@ export default function TutorView({ userId, stats: initialStats = {}, user, fetc
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 xl:col-span-5 flex flex-col gap-8">
           <QuickActions2 userId={userId} role="tutor" />
-           <ClassList tutorId={userId} />
-           <StudentAssignments tutorId={userId} />
+           {/* <ClassList tutorId={userId} /> */}
+           {/* <StudentAssignments tutorId={userId} /> */}
            
         </div>
         <div className="col-span-12 lg:col-span-7 xl:col-span-4 flex flex-col gap-8">
            <StudentList tutorId={userId} />
-           <Messages tutorId={userId} />
+           {/* <Messages tutorId={userId} /> */}
         </div>
         <div className="col-span-12 lg:col-span-5 xl:col-span-3 flex flex-col gap-8">
            <QuickActions tutorId={userId} role="tutor" />
