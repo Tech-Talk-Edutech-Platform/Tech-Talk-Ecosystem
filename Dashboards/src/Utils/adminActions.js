@@ -24,6 +24,9 @@ export const notifyTutor = async (tutorId, message) => {
   return await supabase.functions.invoke('send-push', {
     body: { tutor_id: tutorId, title: "Class Update", body: message },
   });
+
+  if (error) console.error("Push failed:", error);
+  return data;
 };
 
 /**
@@ -39,15 +42,3 @@ export const subscribeToClasses = (onUpdate) => {
     )
     .subscribe();
 };
-// export const notifyTutor = async (tutorId, message) => {
-//   const { data, error } = await supabase.functions.invoke('send-push', {
-//     body: { 
-//       tutor_id: tutorId, 
-//       title: "New Schedule Update", 
-//       body: message 
-//     },
-//   });
-
-//   if (error) console.error("Push failed:", error);
-//   return data;
-// };

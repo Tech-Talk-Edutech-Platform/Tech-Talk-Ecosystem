@@ -25,14 +25,3 @@ export default function AnalyticsDashboard({ isOpen, onClose }) {
     </div>
   );
 }
-// import SalesDashboard from "./SalesDashboard";
-// import SalesDashboardCharts from "./SalesDashboardCharts";
-
-// export default function AnalyticsDashboard() {
-//   return (
-//     <div>
-//       <SalesDashboard />
-//       <SalesDashboardCharts />
-//     </div>
-//   );
-// }
