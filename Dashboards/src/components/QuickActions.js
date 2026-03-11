@@ -3,7 +3,7 @@ import { supabase } from "../supabase";
 import toast from "react-hot-toast";
 import { X, Send, FilePlus, ChevronRight, Video, RotateCcw } from "lucide-react";
 
-export default function QuickActions({ tutorId }) {
+export default function QuickActions({ tutorId, role }) {
   const [modalType, setModalType] = useState(null); 
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -112,21 +112,41 @@ export default function QuickActions({ tutorId }) {
     setLoading(false);
   };
 
-  const actions = [
-    { 
-      label: hasStarted ? "Rejoin Class" : "Start Next Class", 
-      color: "bg-blue-600 hover:bg-blue-700", 
-      icon: hasStarted ? "🔄" : "🚀", 
-      onClick: handleStartClass 
-    },
-    { label: "Add Assignment", color: "bg-indigo-600 hover:bg-indigo-700", icon: "📝", onClick: () => handleOpenModal('assignment') },
-    { label: "Message Student", color: "bg-slate-800 hover:bg-slate-900", icon: "💬", onClick: () => handleOpenModal('message') }
-  ];
+  // const actions = [
+  //   { 
+  //     label: hasStarted ? "Rejoin Class" : "Start Next Class", 
+  //     color: "bg-blue-600 hover:bg-blue-700", 
+  //     icon: hasStarted ? "🔄" : "🚀", 
+  //     onClick: handleStartClass 
+  //   },
+  //   { label: "Add Assignment", color: "bg-indigo-600 hover:bg-indigo-700", icon: "📝", onClick: () => handleOpenModal('assignment') },
+  //   { label: "Message Student", color: "bg-slate-800 hover:bg-slate-900", icon: "💬", onClick: () => handleOpenModal('message') }
+  // ];
+  const tutorActions = [
+  { 
+    label: hasStarted ? "Rejoin Class" : "Start Next Class", 
+    color: "bg-blue-600 hover:bg-blue-700", 
+    icon: hasStarted ? "🔄" : "🚀", 
+    onClick: handleStartClass 
+  },
+  { label: "Add Assignment", color: "bg-indigo-600 hover:bg-indigo-700", icon: "📝", onClick: () => handleOpenModal('assignment') },
+  { label: "Message Student", color: "bg-slate-800 hover:bg-slate-900", icon: "💬", onClick: () => handleOpenModal('message') }
+];
+
+const studentActions = [
+  { 
+    label: "Join Next Class",
+    color: "bg-blue-600 hover:bg-blue-700",
+    icon: "🎓",
+    onClick: handleStartClass
+  }
+];
+const actions = role === "tutor" ? tutorActions : studentActions;
 
   return (
     <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative">
       <div className="flex justify-between items-center mb-5">
-        <h3 className="font-bold text-slate-800 text-lg">Quick Actions</h3>
+        {/* <h3 className="font-bold text-slate-800 text-lg">Quick Actions</h3> */}
         {hasStarted && (
           <button 
             onClick={() => { localStorage.removeItem("class_in_progress"); setHasStarted(false); }}

@@ -8,7 +8,7 @@ import QuickActions2 from "../../components/QuickActions2";
 import { supabase } from "../../supabase";
 import QuickActions from "../../components/QuickActions";
 
-export default function StudentView({ userId, initialStats = {} }) {
+export default function StudentView({ tutorId,userId, initialStats = {} }) {
   const [stats, setStats] = useState({
     lessonsCount: 0,
     pendingTasks: 0,
@@ -87,8 +87,8 @@ export default function StudentView({ userId, initialStats = {} }) {
         
         {/* RIGHT COLUMN */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-3 flex flex-col gap-8">
-           <QuickActions userId={userId} role="student" />
-          
+           {/* <QuickActions userId={userId} role="student" /> */}
+          <QuickActions tutorId={tutorId} role="student" />
         </div>
       </div>
     </>

@@ -103,6 +103,7 @@ export default function TutorView({ userId, stats: initialStats = {}, user, fetc
         </div>
         <div className="col-span-12 lg:col-span-5 xl:col-span-3 flex flex-col gap-8">
            <QuickActions tutorId={userId} role="tutor" />
+           
            <UpcomingClasses tutorId={userId} classes={upcomingClasses} /> 
 
            {/* Raise Issue Component */}
