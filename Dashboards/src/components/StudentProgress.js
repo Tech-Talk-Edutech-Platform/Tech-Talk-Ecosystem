@@ -288,6 +288,7 @@
 //     </div>
 //   </div>
 // );
+// ---------------------------------------
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { X } from "lucide-react";
@@ -591,6 +592,7 @@ const Modal = ({ title, children, onClose }) => (
     </div>
   </div>
 );
+// -----------------------------------
 // // import { useEffect, useState } from "react";
 // // import { supabase } from "../supabase";
 // // import { X } from "lucide-react";

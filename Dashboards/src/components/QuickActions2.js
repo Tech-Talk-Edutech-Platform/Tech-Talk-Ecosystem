@@ -19,6 +19,9 @@ import StudentAssignments from "./StudentAssignments";
 import StudentAssignmentManager from "./StudentAssignmentManager";
 import NotesPanel from "./NotesPanel";
 import AdminNotesManager from "./AdminNotesManager";
+import InvoiceDownloadButton from "./InvoiceDownloadButton";
+import Sales from "./Sales";
+import MyHomework from "./MyHomework";
 
 // ===== NEW COMPONENT FOR INVOICES =====
 function InvoicesManager() {
@@ -67,7 +70,7 @@ export default function QuickActions2({ userId, role }) {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showAddNotesModal, setShowAddNotesModal] = useState(false);
   const [showInvoicesModal, setShowInvoicesModal] = useState(false);
-
+const [showHomeworkModal, setShowHomeworkModal] = useState(false);
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentTasks, setStudentTasks] = useState([]);
@@ -81,12 +84,12 @@ export default function QuickActions2({ userId, role }) {
 
   const actionConfigs = {
     student: [
-      { label: "Learning Path", icon: FileText, color: "bg-pink-500", shadow: "shadow-pink-200" },
+      // { label: "Learning Path", icon: FileText, color: "bg-pink-500", shadow: "shadow-pink-200" },
       { label: "My Homework", icon: Star, color: "bg-amber-400" },
       { label: "Class Notes", icon: BookOpen, color: "bg-indigo-500" },
-      { label: "View Certificates", icon: Award, color: "bg-yellow-500", shadow: "shadow-indigo-200" },
-      { label: "Request Help", icon: HelpCircle, color: "bg-amber-500", shadow: "shadow-amber-200" },
-      { label: "Feedback Form", icon: FileText, color: "bg-orange-600" },
+      // { label: "View Certificates", icon: Award, color: "bg-yellow-500", shadow: "shadow-indigo-200" },
+      // { label: "Request Help", icon: HelpCircle, color: "bg-amber-500", shadow: "shadow-amber-200" },
+      // { label: "Feedback Form", icon: FileText, color: "bg-orange-600" },
     ],
     owner: [
       { label: "User Management", icon: ShieldAlert, color: "bg-indigo-600", shadow: "shadow-blue-200" },
@@ -122,6 +125,7 @@ export default function QuickActions2({ userId, role }) {
     if (label === "Trial Student/Tutor Assignments") return setShowStudentTutorAssignment(true);
     if (label === "Trial Class Material") return setShowTrialMaterial(true);
     if (label === "View Assignments") return setShowAssignmentsModal(true);
+    if (label === "My Homework") return setShowHomeworkModal(true);
     if (label === "Course Assignment") {
       await fetchTutorStudents();
       setShowCourseMaterial(true);
@@ -189,7 +193,11 @@ export default function QuickActions2({ userId, role }) {
           <StudentAssignmentManager viewerRole={role} />
         </Modal>
       )}
-
+      {showHomeworkModal && (
+  <Modal title="My Homework" onClose={() => setShowHomeworkModal(false)}>
+    <MyHomework studentId={userId} />
+  </Modal>
+)}
       {showTrialMaterial && (
         <Modal title="Trial Class Material" onClose={() => setShowTrialMaterial(false)}>
           <iframe
@@ -281,7 +289,9 @@ export default function QuickActions2({ userId, role }) {
 
       {showInvoicesModal && (
         <Modal title="Invoices & Receipts" onClose={() => setShowInvoicesModal(false)}>
-          <InvoicesManager />
+          {/* <InvoicesManager /> */}
+          {/* <InvoiceDownloadButton/> */}
+          <Sales/>
         </Modal>
       )}
     </>

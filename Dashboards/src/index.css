@@ -43,3 +43,20 @@ body {
           .animate-float-slow { animation: floatSlow 4s ease-in-out infinite; }
           .delay-500 { animation-delay: 0.5s; }
           .delay-1000 { animation-delay: 1s; }
+
+        @media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #receipt, #receipt * {
+    visibility: visible;
+  }
+
+  #receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
