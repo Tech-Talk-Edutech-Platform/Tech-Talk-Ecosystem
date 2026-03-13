@@ -17,11 +17,13 @@ import { supabase } from "../supabase";
 import UserManagement from "./UserManagement";
 import StudentAssignments from "./StudentAssignments";
 import StudentAssignmentManager from "./StudentAssignmentManager";
-import NotesPanel from "./NotesPanel";
+
+import NotesPanel from "./Serve/NotesPanel";
 import AdminNotesManager from "./AdminNotesManager";
 import InvoiceDownloadButton from "./InvoiceDownloadButton";
 import Sales from "./Sales";
 import MyHomework from "./MyHomework";
+import LearningPage from "./pages/Learning";
 
 // ===== NEW COMPONENT FOR INVOICES =====
 function InvoicesManager() {
@@ -210,7 +212,9 @@ const [showHomeworkModal, setShowHomeworkModal] = useState(false);
 
       {showNotesModal && (
         <Modal title="Course Notes" onClose={() => setShowNotesModal(false)}>
-          <NotesPanel darkMode={false} courseId={"PUT_COURSE_ID_HERE"} />
+          {/* <NotesPanel darkMode={false} courseId={"PUT_COURSE_ID_HERE"} /> */}
+          {/* <NotesPanel courseId="8cb5f457-4339-4a8a-977c-f88a034f92b4" darkMode={true} supabase={supabase} />; */}
+          <LearningPage/>
         </Modal>
       )}
 

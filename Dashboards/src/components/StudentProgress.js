@@ -362,14 +362,14 @@ export default function StudentList({ tutorId }) {
   const addAssignment = async () => {
     if (!taskName) return;
 
-    const { error } = await supabase
-      .from("student_assignments")
-      .insert({
-        student_id: selectedStudent.id,
-        tutor_id: tutorId,
-        task_name: taskName,
-        status: "pending",
-      });
+    // const { error } = await supabase
+    //   .from("student_assignments")
+    //   .insert({
+    //     student_id: selectedStudent.id,
+    //     tutor_id: tutorId,
+    //     task_name: taskName,
+    //     status: "pending",
+    //   });
 
     if (!error) {
       toast.success("Assignment added");
