@@ -142,20 +142,18 @@ export default function Playground({ darkMode }) {
 
   return (
     <div
-      className={`flex-[2] shadow rounded-lg p-3 overflow-y-auto ${
-        darkMode ? "bg-gray-800" : "bg-white"
-      }`}
+      className={`flex-[2] shadow rounded-lg p-3 overflow-y-auto ${darkMode ? "bg-gray-800" : "bg-white"
+        }`}
     >
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Code Playground</h2>
         <select
           value={mode}
           onChange={(e) => setMode(e.target.value)}
-          className={`p-2 border rounded-md ${
-            darkMode
-              ? "border-gray-600 bg-gray-700 text-gray-200"
-              : "border-gray-300 bg-white text-gray-700"
-          }`}
+          className={`p-2 border rounded-md ${darkMode
+            ? "border-gray-600 bg-gray-700 text-gray-200"
+            : "border-gray-300 bg-white text-gray-700"
+            }`}
         >
           <option value="web">🌐 HTML/CSS/JS</option>
           <option value="python">🐍 Python</option>
@@ -169,10 +167,10 @@ export default function Playground({ darkMode }) {
               value={pythonCode}
               height="250px"
               // extensions={[python()]}
-                extensions={[
-    python(),
-    autocompletion({ override: [] }) // disables all autocomplete
-  ]}
+              extensions={[
+                python(),
+                autocompletion({ override: [] }) // disables all autocomplete
+              ]}
               onChange={(v) => setPythonCode(v)}
               theme={darkMode ? "dark" : "light"}
             />
@@ -189,7 +187,7 @@ export default function Playground({ darkMode }) {
                 <input
                   value={pythonInput}
                   onChange={(e) => setPythonInput(e.target.value)}
-                  onKeyDown={(e) => { if(e.key==="Enter") submitInput(); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") submitInput(); }}
                   className="flex-1 p-2 border rounded"
                   placeholder={inputPrompt || "Type input and press Enter..."}
                   autoFocus
@@ -205,9 +203,8 @@ export default function Playground({ darkMode }) {
 
             <pre
               id="output"
-              className={`w-full h-32 mt-3 p-2 rounded overflow-y-auto text-sm ${
-                darkMode ? "bg-gray-900 text-green-400" : "bg-gray-800 text-green-400"
-              }`}
+              className={`w-full h-32 mt-3 p-2 rounded overflow-y-auto text-sm ${darkMode ? "bg-gray-900 text-green-400" : "bg-gray-800 text-green-400"
+                }`}
               style={{ whiteSpace: "pre-wrap" }}
             />
           </>
@@ -219,9 +216,9 @@ export default function Playground({ darkMode }) {
                 height="100px"
                 // extensions={[html(),]}
                 extensions={[
-  html(),
-  autocompletion({ override: [] }) // disables all autocomplete
-]}
+                  html(),
+                  autocompletion({ override: [] }) // disables all autocomplete
+                ]}
                 onChange={(v) => setHtmlCode(v)}
                 theme={darkMode ? "dark" : "light"}
               />
@@ -230,9 +227,9 @@ export default function Playground({ darkMode }) {
                 height="100px"
                 // extensions={[css()]}
                 extensions={[
- css(),
-  autocompletion({ override: [] }) // disables all autocomplete
-]}
+                  css(),
+                  autocompletion({ override: [] }) // disables all autocomplete
+                ]}
                 onChange={(v) => setCssCode(v)}
                 theme={darkMode ? "dark" : "light"}
               />
@@ -241,9 +238,9 @@ export default function Playground({ darkMode }) {
                 height="100px"
                 // extensions={[javascript()]}
                 extensions={[
-  javascript(),
-  autocompletion({ override: [] }) // disables all autocomplete
-]}
+                  javascript(),
+                  autocompletion({ override: [] }) // disables all autocomplete
+                ]}
                 onChange={(v) => setJsCode(v)}
                 theme={darkMode ? "dark" : "light"}
               />
@@ -261,9 +258,8 @@ export default function Playground({ darkMode }) {
             </button>
             {consoleOpen && (
               <pre
-                className={`mt-2 p-2 rounded overflow-y-auto text-sm h-32 ${
-                  darkMode ? "bg-gray-900 text-green-400" : "bg-gray-900 text-black"
-                }`}
+                className={`mt-2 p-2 rounded overflow-y-auto text-sm h-32 ${darkMode ? "bg-gray-900 text-green-400" : "bg-gray-900 text-black"
+                  }`}
                 dangerouslySetInnerHTML={{ __html: jsOutput }}
               />
             )}

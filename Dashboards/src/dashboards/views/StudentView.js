@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BookOpen, CheckCircle, Star, Clock } from "lucide-react"; 
+import { BookOpen, CheckCircle, Star, Clock } from "lucide-react";
 import StatCard from "../../components/StatCard";
 import StudentAssignments from "../../components/StudentAssignments"; // Shows "My Homework"
 import Messages from "../../Utils/fetchMessage"; // Chat
@@ -8,7 +8,7 @@ import QuickActions2 from "../../components/QuickActions2";
 import { supabase } from "../../supabase";
 import QuickActions from "../../components/QuickActions";
 
-export default function StudentView({ tutorId,userId, initialStats = {} }) {
+export default function StudentView({ tutorId, userId, initialStats = {} }) {
   const [stats, setStats] = useState({
     lessonsCount: 0,
     pendingTasks: 0,
@@ -67,27 +67,27 @@ export default function StudentView({ tutorId,userId, initialStats = {} }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard title="Lessons Attended" value={stats.lessonsCount} color="blue" icon={CheckCircle} />
         <StatCard title="Homework Pending" value={stats.pendingTasks} color="purple" icon={BookOpen} />
-        <StatCard title="Tech Points" value={stats.points} color="amber" icon={Star} />
+        <StatCard title="My Points" value={stats.points} color="amber" icon={Star} />
         <StatCard title="Next Lesson" value={stats.nextLessonTime} color="green" icon={Clock} />
       </div>
 
       <div className="grid grid-cols-12 gap-8">
         {/* LEFT COLUMN */}
         <div className="col-span-12 xl:col-span-5 flex flex-col gap-8">
-           {/* <ClassList studentId={userId} role="student" /> */}
-           {/* <StudentAssignments studentId={userId} role="student" /> */}
-           <QuickActions2 userId={userId} role="student" />
+          {/* <ClassList studentId={userId} role="student" /> */}
+          {/* <StudentAssignments studentId={userId} role="student" /> */}
+          <QuickActions2 userId={userId} role="student" />
         </div>
-        
+
         {/* MIDDLE COLUMN */}
         <div className="col-span-12 lg:col-span-7 xl:col-span-4 flex flex-col gap-8">
-           <UpcomingClasses studentId={userId} />
-           <Messages userId={userId} role="student" />
+          <UpcomingClasses studentId={userId} />
+          <Messages userId={userId} role="student" />
         </div>
-        
+
         {/* RIGHT COLUMN */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-3 flex flex-col gap-8">
-           {/* <QuickActions userId={userId} role="student" /> */}
+          {/* <QuickActions userId={userId} role="student" /> */}
           <QuickActions tutorId={tutorId} role="student" />
         </div>
       </div>

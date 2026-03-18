@@ -2,8 +2,12 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../supabase";
 import toast from "react-hot-toast";
 import { X, Send, FilePlus, ChevronRight, RotateCcw } from "lucide-react";
+import { useNavigate } from "react-router-dom"; // ADD at top
+
+
 
 export default function QuickActions({ tutorId, role, studentId }) {
+  const navigate = useNavigate();
   const [modalType, setModalType] = useState(null);
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -85,46 +89,160 @@ export default function QuickActions({ tutorId, role, studentId }) {
   //   }
   //   setLoading(false);
   // };
-const handleStartClass = async () => {
-  if (!tutorId && role === "tutor") return;
-  if (!studentId && role === "student") return;
+  const handleStartClass = async () => {
+    if (!tutorId && role === "tutor") return;
+    if (!studentId && role === "student") return;
 
-  setLoading(true);
+    setLoading(true);
 
-  const { data, error } = await supabase
-    .rpc("get_next_class", {
+    const { data, error } = await supabase.rpc("get_next_class", {
       user_id: role === "tutor" ? tutorId : studentId,
-      role
+      role,
     });
 
-  if (error || !data) {
-    toast.error("No upcoming class found.");
+    const classData = Array.isArray(data) ? data[0] : data;
+
+    if (error || !classData) {
+      toast.error("No upcoming class found.");
+      setLoading(false);
+      return;
+    }
+
+    const now = new Date();
+    const startTime = new Date(classData.start_time);
+    const diffInMinutes = (startTime - now) / 60000;
+
+    if (diffInMinutes > 10) {
+      toast.error(`Class starts in ${Math.round(diffInMinutes)} minutes.`);
+      setLoading(false);
+      return;
+    }
+
+    // const meetingLink = classData.meet_link || classData.meeting_link;
+    const meetingLink = nextClass.meet_link || nextClass.meeting_link;
+
+    if (meetingLink) {
+      // window.open(meetingLink, "_blank");
+
+      localStorage.setItem("class_in_progress", "true");
+      setHasStarted(true);
+
+      toast.success(
+        hasStarted
+          ? "Rejoining class..."
+          : `Starting: ${classData.class_title || classData.title}`
+      );
+
+      navigate("/learning", {
+        state: {
+          openVideo: true,
+          classData,
+        },
+      });
+    } else {
+      toast.error("No meeting link available.");
+    }
+
     setLoading(false);
-    return;
-  }
+  };
+  // const handleStartClass = async () => {
+  //   if (!tutorId && role === "tutor") return;
+  //   if (!studentId && role === "student") return;
 
-  const now = new Date();
-  const startTime = new Date(data.start_time);
+  //   setLoading(true);
 
-  // Optional: check if too early
-  const diffInMinutes = (startTime - now) / 60000;
-  if (diffInMinutes > 10) {
-    toast.error(`Class starts in ${Math.round(diffInMinutes)} minutes.`);
-    setLoading(false);
-    return;
-  }
+  //   const { data, error } = await supabase.rpc("get_next_class", {
+  //     user_id: role === "tutor" ? tutorId : studentId,
+  //     role,
+  //   });
 
-  if (data.meet_link) {
-    window.open(data.meet_link, "_blank");
-    localStorage.setItem("class_in_progress", "true");
-    setHasStarted(true);
-    toast.success(hasStarted ? "Rejoining class..." : `Starting: ${data.class_title}`);
-  } else {
-    toast.error("No meeting link available.");
-  }
+  //   const classData = Array.isArray(data) ? data[0] : data;
 
-  setLoading(false);
-};
+  //   if (error || !classData) {
+  //     toast.error("No upcoming class found.");
+  //     setLoading(false);
+  //     return;
+  //   }
+
+  //   const now = new Date();
+  //   const startTime = new Date(classData.start_time);
+  //   const diffInMinutes = (startTime - now) / 60000;
+
+  //   if (diffInMinutes > 10) {
+  //     toast.error(`Class starts in ${Math.round(diffInMinutes)} minutes.`);
+  //     setLoading(false);
+  //     return;
+  //   }
+
+  //   // ✅ FIXED FIELD NAME HERE
+  //   const meetingLink = classData.meet_link || classData.meeting_link;
+
+  //   if (meetingLink) {
+  //     window.open(meetingLink, "_blank");
+
+  //     localStorage.setItem("class_in_progress", "true");
+  //     setHasStarted(true);
+
+  //     toast.success(
+  //       hasStarted
+  //         ? "Rejoining class..."
+  //         : `Starting: ${classData.class_title || classData.title}`
+  //     );
+
+  //     navigate("/learning", {
+  //       state: {
+  //         openVideo: true,
+  //         classData, // ✅ PASS DATA DIRECTLY
+  //       },
+  //     });
+  //   } else {
+  //     toast.error("No meeting link available.");
+  //   }
+
+  //   setLoading(false);
+  // };
+  // const handleStartClass = async () => {
+  //   if (!tutorId && role === "tutor") return;
+  //   if (!studentId && role === "student") return;
+
+  //   setLoading(true);
+
+  //   const { data, error } = await supabase
+  //     .rpc("get_next_class", {
+  //       user_id: role === "tutor" ? tutorId : studentId,
+  //       role
+  //     });
+
+  //   if (error || !data) {
+  //     toast.error("No upcoming class found.");
+  //     setLoading(false);
+  //     return;
+  //   }
+
+  // const now = new Date();
+  // const startTime = new Date(data.start_time);
+
+  // // Optional: check if too early
+  // const diffInMinutes = (startTime - now) / 60000;
+  // if (diffInMinutes > 10) {
+  //   toast.error(`Class starts in ${Math.round(diffInMinutes)} minutes.`);
+  //   setLoading(false);
+  //   return;
+  // }
+
+  //   if (data.meet_link) {
+  //     // window.open(data.meet_link, "_blank");
+  //     window.open(nextClass.meet_link || nextClass.meeting_link, "_blank")
+  //     localStorage.setItem("class_in_progress", "true");
+  //     setHasStarted(true);
+  //     toast.success(hasStarted ? "Rejoining class..." : `Starting: ${data.class_title}`);
+  //     navigate("/learning", { state: { openVideo: true } });
+  //   } else {
+  //     toast.error("No meeting link available.");
+  //   }
+
+  //   setLoading(false);
+  // };
   const handleOpenModal = (type) => {
     setModalType(type);
     fetchStudents();

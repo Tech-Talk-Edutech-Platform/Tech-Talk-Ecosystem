@@ -5,6 +5,7 @@ import UnifiedDashboard from "./dashboards/UnifiedDashboard";
 import FullCalendarView from "./components/Calendar";
 import RoleGate from "./auth/RoleGate";
 import LandingOrDashboard from "./LandingOrDashboard";
+import LearningPage from "./components/pages/Learning";
 
 export default function App() {
   const allRoles = ['tutor', 'owner', 'operations_admin', 'tech_admin', 'student'];
@@ -15,30 +16,31 @@ export default function App() {
         {/* PUBLIC ROUTES */}
         {/* <Route path="/" element={<LandingPage />} />   Landing page is public */}
         <Route path="/" element={<LandingOrDashboard />} />
-        <Route path="/login" element={<Login />} /> 
+        <Route path="/login" element={<Login />} />
 
 
 
 
         {/* AUTHENTICATED HUB */}
-        <Route 
-          path="/:role" 
+        <Route
+          path="/:role"
           element={
             <RoleGate allowedRoles={allRoles}>
               <UnifiedDashboard />
             </RoleGate>
-          } 
+          }
         />
 
         {/* SPECIALTY ROUTES */}
-        <Route 
-          path="/calendar" 
+        <Route
+          path="/calendar"
           element={
             <RoleGate allowedRoles={allRoles}>
               <FullCalendarView />
             </RoleGate>
-          } 
+          }
         />
+        <Route path="/learning" element={<LearningPage />} />
 
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
