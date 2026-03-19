@@ -16,20 +16,20 @@ const OwnerDashboard = () => {
 
   const loadStats = async () => {
     const [
-      { data: revenue }, 
-      { count: tutors }, 
-      { count: students }, 
-      { count: leads }, 
-      { count: paidLeads }, 
+      { data: revenue },
+      { count: tutors },
+      { count: students },
+      { count: leads },
+      { count: paidLeads },
       { count: issues }
     ] = await Promise.all([
-        supabase.from('payments').select('amount').eq('status', 'paid'),
-        supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('students').select('*', { count: 'exact', head: true }).eq('active', true),
-        supabase.from('leads').select('*', { count: 'exact', head: true }),
-        supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'converted'),
-        supabase.from('issues').select('*', { count: 'exact', head: true }).eq('status', 'open')
-      ]);
+      supabase.from('payments').select('amount').eq('status', 'paid'),
+      supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('active', true),
+      supabase.from('students').select('*', { count: 'exact', head: true }).eq('active', true),
+      supabase.from('leads').select('*', { count: 'exact', head: true }),
+      supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'converted'),
+      supabase.from('issues').select('*', { count: 'exact', head: true }).eq('status', 'open')
+    ]);
 
     const totalRevenue = revenue?.reduce((sum, p) => sum + p.amount, 0) || 0;
     const conversionRate = leads ? ((paidLeads / leads) * 100).toFixed(1) : 0;
@@ -51,34 +51,34 @@ const OwnerDashboard = () => {
       </header>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        <Card 
-          title="Total Revenue" 
-          value={`KES ${stats.totalRevenue.toLocaleString()}`} 
-          color="indigo" 
+        <Card
+          title="Total Revenue"
+          value={`KES ${stats.totalRevenue.toLocaleString()}`}
+          color="indigo"
           detail="All-time earnings"
         />
-        <Card 
-          title="Active Tutors" 
-          value={stats.tutors} 
-          color="emerald" 
+        <Card
+          title="Active Tutors"
+          value={stats.tutors}
+          color="emerald"
           detail="Verified staff"
         />
-        <Card 
-          title="Active Students" 
-          value={stats.students} 
-          color="sky" 
+        <Card
+          title="Active Students"
+          value={stats.students}
+          color="sky"
           detail="Enrolled learners"
         />
-        <Card 
-          title="Lead Conv. %" 
-          value={`${stats.conversionRate}%`} 
-          color="violet" 
+        <Card
+          title="Lead Conv. %"
+          value={`${stats.conversionRate}%`}
+          color="violet"
           detail="Efficiency"
         />
-        <Card 
-          title="Open Issues" 
-          value={stats.issues} 
-          color={stats.issues > 0 ? "rose" : "emerald"} 
+        <Card
+          title="Open Issues"
+          value={stats.issues}
+          color={stats.issues > 0 ? "rose" : "emerald"}
           detail="Action required"
         />
       </div>

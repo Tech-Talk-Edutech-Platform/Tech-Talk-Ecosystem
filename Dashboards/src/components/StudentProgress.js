@@ -288,7 +288,6 @@
 //     </div>
 //   </div>
 // );
-// ---------------------------------------
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { X } from "lucide-react";
@@ -308,10 +307,11 @@ export default function StudentList({ tutorId }) {
   const [showAssignment, setShowAssignment] = useState(false);
   const [showMessage, setShowMessage] = useState(false);
 
+  // FETCH STUDENTS
   useEffect(() => {
     const fetchStudents = async () => {
       const { data } = await supabase
-        .from("students")
+        .from("users")
         .select("*")
         .eq("assigned_tutor_id", tutorId)
         .order("created_at", { ascending: false });
@@ -322,6 +322,7 @@ export default function StudentList({ tutorId }) {
     if (tutorId) fetchStudents();
   }, [tutorId]);
 
+  // FETCH STUDENT DETAILS
   useEffect(() => {
     const fetchStudentData = async () => {
       if (!selectedStudent) return;
@@ -339,7 +340,7 @@ export default function StudentList({ tutorId }) {
         .single();
 
       if (assignmentsData) setAssignments(assignmentsData);
-      if (notesData) setNotes(notesData.topic || "");
+      if (notesData) setNotes(notesData?.topic || "");
     };
 
     fetchStudentData();
@@ -362,14 +363,14 @@ export default function StudentList({ tutorId }) {
   const addAssignment = async () => {
     if (!taskName) return;
 
-    // const { error } = await supabase
-    //   .from("student_assignments")
-    //   .insert({
-    //     student_id: selectedStudent.id,
-    //     tutor_id: tutorId,
-    //     task_name: taskName,
-    //     status: "pending",
-    //   });
+    const { error } = await supabase
+      .from("student_assignments")
+      .insert({
+        student_id: selectedStudent.id,
+        tutor_id: tutorId,
+        task_name: taskName,
+        status: "pending",
+      });
 
     if (!error) {
       toast.success("Assignment added");
@@ -381,13 +382,11 @@ export default function StudentList({ tutorId }) {
   const sendMessage = async () => {
     if (!message) return;
 
-    const { error } = await supabase
-      .from("messages")
-      .insert({
-        sender_id: tutorId,
-        receiver_id: selectedStudent.id,
-        content: message,
-      });
+    const { error } = await supabase.from("messages").insert({
+      sender_id: tutorId,
+      receiver_id: selectedStudent.id,
+      content: message,
+    });
 
     if (!error) {
       toast.success("Message sent");
@@ -439,7 +438,33 @@ export default function StudentList({ tutorId }) {
         <div className="space-y-3">
           {students.slice(0, 3).map(renderStudent)}
         </div>
+
+        {/* ✅ VIEW MORE BUTTON */}
+        {students.length > 3 && (
+          // <button
+          //   onClick={() => setShowAllModal(true)}
+          //   className="mt-4 text-sm text-blue-600 font-bold"
+          // >
+          //   View More
+          // </button>
+          <button
+            onClick={() => setShowAllModal(true)}
+            className="text-blue-600 text-xs font-bold hover:underline"
+          >
+            View All &gt;
+          </button>
+        )}
+
       </div>
+
+      {/* ✅ ALL STUDENTS MODAL */}
+      {showAllModal && (
+        <Modal title="All Students" onClose={() => setShowAllModal(false)}>
+          <div className="space-y-3">
+            {students.map(renderStudent)}
+          </div>
+        </Modal>
+      )}
 
       {/* STUDENT DASHBOARD */}
       {selectedStudent && (
@@ -488,7 +513,7 @@ export default function StudentList({ tutorId }) {
               </button>
             </div>
 
-            {/* ASSIGNMENT FORM */}
+            {/* ASSIGNMENT */}
             {showAssignment && (
               <div>
                 <input
@@ -497,7 +522,6 @@ export default function StudentList({ tutorId }) {
                   placeholder="Assignment name"
                   className="w-full border p-2 rounded-xl"
                 />
-
                 <button
                   onClick={addAssignment}
                   className="mt-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm"
@@ -507,7 +531,7 @@ export default function StudentList({ tutorId }) {
               </div>
             )}
 
-            {/* MESSAGE FORM */}
+            {/* MESSAGE */}
             {showMessage && (
               <div>
                 <textarea
@@ -515,7 +539,6 @@ export default function StudentList({ tutorId }) {
                   onChange={(e) => setMessage(e.target.value)}
                   className="w-full border p-3 rounded-xl"
                 />
-
                 <button
                   onClick={sendMessage}
                   className="mt-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm"
@@ -525,7 +548,7 @@ export default function StudentList({ tutorId }) {
               </div>
             )}
 
-            {/* ASSIGNMENTS LIST */}
+            {/* ASSIGNMENTS */}
             <div>
               <h4 className="font-bold mb-2">Assignments</h4>
 
@@ -552,7 +575,7 @@ export default function StudentList({ tutorId }) {
               ))}
             </div>
 
-            {/* LESSON NOTES */}
+            {/* NOTES */}
             <div>
               <h4 className="font-bold mb-2">Lesson Notes</h4>
 
@@ -587,179 +610,7 @@ const Modal = ({ title, children, onClose }) => (
       </button>
 
       <h2 className="text-xl font-black mb-6">{title}</h2>
-
       {children}
     </div>
   </div>
 );
-// -----------------------------------
-// // import { useEffect, useState } from "react";
-// // import { supabase } from "../supabase";
-// // import { X } from "lucide-react";
-
-// // export default function StudentList({ tutorId }) {
-// //   const [students, setStudents] = useState([]);
-// //   const [showAllModal, setShowAllModal] = useState(false);
-// //   const [selectedStudent, setSelectedStudent] = useState(null);
-
-// //   useEffect(() => {
-// //     const fetchStudents = async () => {
-// //       const { data } = await supabase
-// //         .from("students")
-// //         .select("*")
-// //         .eq("assigned_tutor_id", tutorId)
-// //         .order("created_at", { ascending: false });
-
-// //       if (data) setStudents(data);
-// //     };
-
-// //     if (tutorId) fetchStudents();
-// //   }, [tutorId]);
-
-// //   const renderStudent = (s) => (
-// //     <div
-// //       key={s.id}
-// //       onClick={() => setSelectedStudent(s)}
-// //       className="flex items-center gap-4 cursor-pointer hover:bg-slate-50 p-2 rounded-xl transition"
-// //     >
-// //       <div className="relative">
-// //         <img
-// //           src={
-// //             s.avatar_url ||
-// //             `https://ui-avatars.com/api/?name=${encodeURIComponent(
-// //               s.full_name
-// //             )}&background=random`
-// //           }
-// //           className="w-11 h-11 rounded-full border-2 border-slate-50 shadow-sm"
-// //           alt="avatar"
-// //         />
-// //         <div
-// //           className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${
-// //             s.online ? "bg-emerald-500" : "bg-slate-300"
-// //           }`}
-// //         ></div>
-// //       </div>
-
-// //       <div className="flex-1">
-// //         <div className="flex justify-between mb-1.5 items-end">
-// //           <div>
-// //             <p className="text-sm font-bold text-slate-800 leading-none">
-// //               {s.full_name}
-// //             </p>
-// //             <p className="text-[10px] font-semibold text-slate-400 mt-1 uppercase tracking-tight">
-// //               {s.course_name || "Scratch Beginners"}
-// //             </p>
-// //           </div>
-
-// //           <span className="text-[11px] font-black text-slate-600 leading-none">
-// //             {s.progress || 0}%
-// //           </span>
-// //         </div>
-
-// //         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-// //           <div
-// //             className="h-full rounded-full transition-all duration-700 ease-out"
-// //             style={{
-// //               width: `${s.progress || 0}%`,
-// //               backgroundColor: s.progress_color || "#3b82f6",
-// //             }}
-// //           />
-// //         </div>
-// //       </div>
-// //     </div>
-// //   );
-
-// //   return (
-// //     <>
-// //       {/* Main Card */}
-// //       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-// //         <div className="flex justify-between items-center mb-6">
-// //           <h3 className="font-bold text-slate-800 tracking-tight">
-// //             Student Progress
-// //           </h3>
-
-// //           {students.length > 3 && (
-// //             <button
-// //               onClick={() => setShowAllModal(true)}
-// //               className="text-blue-600 text-xs font-bold hover:underline"
-// //             >
-// //               View All &gt;
-// //             </button>
-// //           )}
-// //         </div>
-
-// //         <div className="space-y-4">
-// //           {students.length > 0
-// //             ? students.slice(0, 3).map(renderStudent)
-// //             : (
-// //               <p className="text-center text-slate-400 text-sm py-2">
-// //                 No active students.
-// //               </p>
-// //             )}
-// //         </div>
-// //       </div>
-
-// //       {/* View All Modal */}
-// //       {showAllModal && (
-// //         <Modal title="All Students" onClose={() => setShowAllModal(false)}>
-// //           <div className="space-y-4">
-// //             {students.map(renderStudent)}
-// //           </div>
-// //         </Modal>
-// //       )}
-
-// //       {/* Student Info Modal */}
-// //       {selectedStudent && (
-// //         <Modal
-// //           title="Student Information"
-// //           onClose={() => setSelectedStudent(null)}
-// //         >
-// //           <div className="space-y-4">
-// //             <div className="flex items-center gap-4">
-// //               <img
-// //                 src={
-// //                   selectedStudent.avatar_url ||
-// //                   `https://ui-avatars.com/api/?name=${encodeURIComponent(
-// //                     selectedStudent.full_name
-// //                   )}&background=random`
-// //                 }
-// //                 className="w-16 h-16 rounded-full"
-// //                 alt="avatar"
-// //               />
-// //               <div>
-// //                 <h3 className="text-lg font-bold">
-// //                   {selectedStudent.full_name}
-// //                 </h3>
-// //                 <p className="text-sm text-slate-500">
-// //                   {selectedStudent.email || "No email provided"}
-// //                 </p>
-// //               </div>
-// //             </div>
-
-// //             <div className="border-t pt-4 text-sm text-slate-600 space-y-2">
-// //               <p><strong>Course:</strong> {selectedStudent.course_name || "Scratch Beginners"}</p>
-// //               <p><strong>Progress:</strong> {selectedStudent.progress || 0}%</p>
-// //               <p><strong>Status:</strong> {selectedStudent.online ? "Online" : "Offline"}</p>
-// //             </div>
-// //           </div>
-// //         </Modal>
-// //       )}
-// //     </>
-// //   );
-// // }
-
-// // /* Reusable Modal */
-// // const Modal = ({ title, children, onClose }) => (
-// //   <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-6">
-// //     <div className="bg-white w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl shadow-2xl p-8 relative">
-// //       <button
-// //         onClick={onClose}
-// //         className="absolute top-6 right-6 text-slate-400 hover:text-slate-700"
-// //       >
-// //         <X size={22} />
-// //       </button>
-// //       <h2 className="text-xl font-black mb-6">{title}</h2>
-// //       {children}
-// //     </div>
-// //   </div>
-// // );
