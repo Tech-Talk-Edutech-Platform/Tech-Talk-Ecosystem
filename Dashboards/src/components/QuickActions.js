@@ -20,33 +20,84 @@ export default function QuickActions({ tutorId, role, studentId }) {
   const [category, setCategory] = useState("Scratch");
   const [taskUrl, setTaskUrl] = useState("");
 
-  // Check if a class session is active
-  useEffect(() => {
-    if (localStorage.getItem("class_in_progress") === "true") setHasStarted(true);
-  }, []);
+  const handleSendMessage = async () => {
+    if (!selectedStudent || !message.trim()) return;
+    setLoading(true);
 
+    const { data, error } = await supabase
+      .from("messages")
+      .insert([
+        {
+          sender_id: tutorId || studentId,
+          receiver_id: selectedStudent.id,
+          content: message,
+          is_read: false,
+        },
+      ])
+      .select(); // get inserted row
+
+    if (error) {
+      toast.error("Message failed: " + error.message);
+      setLoading(false);
+      return;
+    }
+
+    toast.success("Message sent!");
+    setMessage(""); // clear input
+    setLoading(false);
+
+    // dismiss modal slightly after showing toast
+    setTimeout(() => {
+      closeModal();
+    }, 600); // 0.6s delay allows toast to render
+  };
   // Fetch students or assigned tutor
+  // const fetchStudents = async () => {
+  //   if (role === "tutor") {
+  //     // Tutors fetch their students
+  //     const { data, error } = await supabase
+  //       .from("users")
+  //       .select("id, full_name")
+  //       .eq("assigned_tutor_id", tutorId);
+  //     if (!error) setStudents(data || []);
+  //   } else if (role === "student") {
+  //     // Students fetch their assigned tutor
+  //     const { data, error } = await supabase
+  //       .from("users")
+  //       .select("assigned_tutor_id, tutors(id, full_name)")
+  //       .eq("id", studentId)
+  //       .single();
+
+  //     if (!error && data?.tutors) {
+  //       setStudents([{ id: data.assigned_tutor_id, full_name: data.tutors.full_name }]);
+  //       setSelectedStudent({ id: data.assigned_tutor_id, full_name: data.tutors.full_name });
+  //     }
+  //   }
+  // };
   const fetchStudents = async () => {
-    if (role === "tutor") {
-      // Tutors fetch their students
-      const { data, error } = await supabase
+    if (role === "student") {
+      // 1. get tutor id
+      const { data: userData } = await supabase
         .from("users")
-        .select("id, full_name")
-        .eq("assigned_tutor_id", tutorId);
-      if (!error) setStudents(data || []);
-    } else if (role === "student") {
-      // Students fetch their assigned tutor
-      const { data, error } = await supabase
-        .from("users")
-        .select("assigned_tutor_id, tutors(id, full_name)")
+        .select("assigned_tutor_id")
         .eq("id", studentId)
         .single();
 
-      if (!error && data?.tutors) {
-        setStudents([{ id: data.assigned_tutor_id, full_name: data.tutors.full_name }]);
-        setSelectedStudent({ id: data.assigned_tutor_id, full_name: data.tutors.full_name });
+      if (!userData?.assigned_tutor_id) return;
+
+      // 2. get tutor
+      const { data: tutor } = await supabase
+        .from("users")
+        .select("id, full_name")
+        .eq("id", userData.assigned_tutor_id)
+        .single();
+
+      if (tutor) {
+        setStudents([tutor]);
+        setSelectedStudent(tutor);
       }
     }
+
   };
 
   // Start or join class
@@ -119,7 +170,8 @@ export default function QuickActions({ tutorId, role, studentId }) {
     }
 
     // const meetingLink = classData.meet_link || classData.meeting_link;
-    const meetingLink = nextClass.meet_link || nextClass.meeting_link;
+    // const meetingLink = nextClass.meet_link || nextClass.meeting_link;
+    const meetingLink = classData.meet_link
 
     if (meetingLink) {
       // window.open(meetingLink, "_blank");
@@ -277,19 +329,19 @@ export default function QuickActions({ tutorId, role, studentId }) {
     setLoading(false);
   };
 
-  const handleSendMessage = async () => {
-    if (!selectedStudent || !message.trim()) return;
-    setLoading(true);
-    const { error } = await supabase.from("messages").insert([
-      { sender_id: tutorId || studentId, receiver_id: selectedStudent.id, content: message, is_read: false },
-    ]);
-    if (error) toast.error("Message failed");
-    else {
-      toast.success("Message sent!");
-      closeModal();
-    }
-    setLoading(false);
-  };
+  // const handleSendMessage = async () => {
+  //   if (!selectedStudent || !message.trim()) return;
+  //   setLoading(true);
+  //   const { error } = await supabase.from("messages").insert([
+  //     { sender_id: tutorId || studentId, receiver_id: selectedStudent.id, content: message, is_read: false },
+  //   ]);
+  //   if (error) toast.error("Message failed");
+  //   else {
+  //     toast.success("Message sent!");
+  //     closeModal();
+  //   }
+  //   setLoading(false);
+  // };
 
   const tutorActions = [
     { label: hasStarted ? "Rejoin Class" : "Start Next Class", color: "bg-blue-600 hover:bg-blue-700", icon: hasStarted ? "🔄" : "🚀", onClick: handleStartClass },

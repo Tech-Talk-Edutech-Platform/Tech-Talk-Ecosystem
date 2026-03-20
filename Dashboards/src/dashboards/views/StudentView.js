@@ -88,7 +88,7 @@ export default function StudentView({ tutorId, userId, initialStats = {} }) {
         {/* RIGHT COLUMN */}
         <div className="col-span-12 lg:col-span-5 xl:col-span-3 flex flex-col gap-8">
           {/* <QuickActions userId={userId} role="student" /> */}
-          <QuickActions tutorId={tutorId} role="student" />
+          <QuickActions tutorId={tutorId} studentId={userId} role="student" />
         </div>
       </div>
     </>
