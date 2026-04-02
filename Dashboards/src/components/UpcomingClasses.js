@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { supabase } from "../supabase"; 
+import { supabase } from "../supabase";
 import { Link } from "react-router-dom";
 import { Calendar, Clock } from "lucide-react";
 
@@ -16,16 +16,27 @@ export default function UpcomingClasses({ tutorId, studentId }) {
       const targetColumn = tutorId ? "tutor_id" : "student_id";
 
       if (!targetId) return;
-      
+
       setLoading(true);
       try {
+        // const { data, error } = await supabase
+        //   .from("calendar_events")
+        //   .select("*")
+        //   .eq(targetColumn, targetId) // Properly connects to your schema
+        //   .gte("start_time", new Date().toISOString())
+        //   .order('start_time', { ascending: true })
+        //   .limit(3);
         const { data, error } = await supabase
           .from("calendar_events")
-          .select("*")
-          .eq(targetColumn, targetId) // Properly connects to your schema
+          .select(`
+    *,
+    classes!inner (
+      student_id
+    )
+  `)
+          .eq("classes.student_id", studentId) // Filter via the joined class
           .gte("start_time", new Date().toISOString())
-          .order('start_time', { ascending: true })
-          .limit(3);
+          .order("start_time", { ascending: true });
 
         if (error) throw error;
         setUpcoming(data || []);
@@ -68,15 +79,14 @@ export default function UpcomingClasses({ tutorId, studentId }) {
                 </span>
                 <div className="w-[2px] h-full bg-slate-100 my-1 group-last:hidden"></div>
               </div>
-              
+
               <div className="flex-1 pb-4">
                 <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                   {item.title}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter ${
-                    item.class_type === 'trial' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
-                  }`}>
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tighter ${item.class_type === 'trial' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                    }`}>
                     {item.class_type}
                   </span>
                 </div>

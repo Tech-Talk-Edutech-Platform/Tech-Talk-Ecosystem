@@ -1,3 +1,305 @@
+// // src/pages/BlocklyEditor.js
+// import React, { useEffect, useRef, useState } from "react";
+// import * as Blockly from "blockly";
+// import "blockly/blocks";
+// import { javascriptGenerator } from "blockly/javascript";
+// import "blockly/msg/en";
+// import "blockly/python";
+// import { supabase } from "../../supabase";
+
+// // ---------------- BLOCKS ----------------
+
+// // Green flag
+// Blockly.Blocks["green_flag"] = {
+//   init: function () {
+//     this.appendDummyInput().appendField("when 🟢 green flag clicked");
+//     this.setNextStatement(true);
+//     this.setColour(60);
+//   },
+// };
+
+// // Key press
+// Blockly.Blocks["when_key"] = {
+//   init: function () {
+//     this.appendDummyInput()
+//       .appendField("when key")
+//       .appendField(new Blockly.FieldTextInput("space"), "KEY")
+//       .appendField("pressed");
+//     this.setNextStatement(true);
+//     this.setColour(60);
+//   },
+// };
+
+// // Move
+// Blockly.Blocks["move_sprite"] = {
+//   init: function () {
+//     this.appendDummyInput()
+//       .appendField("move")
+//       .appendField(new Blockly.FieldNumber(10), "STEPS")
+//       .appendField("steps");
+//     this.setPreviousStatement(true);
+//     this.setNextStatement(true);
+//     this.setColour(160);
+//   },
+// };
+
+// // Turn
+// Blockly.Blocks["turn_sprite"] = {
+//   init: function () {
+//     this.appendDummyInput()
+//       .appendField("turn")
+//       .appendField(new Blockly.FieldNumber(15), "DEG")
+//       .appendField("degrees");
+//     this.setPreviousStatement(true);
+//     this.setNextStatement(true);
+//     this.setColour(160);
+//   },
+// };
+
+// // GoTo
+// Blockly.Blocks["goto_xy"] = {
+//   init: function () {
+//     this.appendDummyInput()
+//       .appendField("go to x:")
+//       .appendField(new Blockly.FieldNumber(0), "X")
+//       .appendField("y:")
+//       .appendField(new Blockly.FieldNumber(0), "Y");
+//     this.setPreviousStatement(true);
+//     this.setNextStatement(true);
+//     this.setColour(160);
+//   },
+// };
+
+// // ---------------- GENERATORS ----------------
+
+// // Events
+// javascriptGenerator.forBlock["green_flag"] = () => {
+//   return `__greenFlag(() => {\n`;
+// };
+
+// javascriptGenerator.forBlock["when_key"] = (block) => {
+//   const key = block.getFieldValue("KEY");
+//   return `__whenKey("${key}", () => {\n`;
+// };
+
+// // Motion
+// javascriptGenerator.forBlock["move_sprite"] = (block) => {
+//   return `move(${block.getFieldValue("STEPS")});\n`;
+// };
+
+// javascriptGenerator.forBlock["turn_sprite"] = (block) => {
+//   return `turn(${block.getFieldValue("DEG")});\n`;
+// };
+
+// javascriptGenerator.forBlock["goto_xy"] = (block) => {
+//   return `goTo(${block.getFieldValue("X")}, ${block.getFieldValue("Y")});\n`;
+// };
+
+// // Close event blocks
+// javascriptGenerator.scrub_ = function (block, code) {
+//   const next = block.nextConnection && block.nextConnection.targetBlock();
+//   const nextCode = javascriptGenerator.blockToCode(next);
+
+//   if (block.type === "green_flag" || block.type === "when_key") {
+//     return code + (nextCode || "") + "});\n";
+//   }
+
+//   return code + (nextCode || "");
+// };
+
+// // ---------------- COMPONENT ----------------
+
+// export default function BlocklyEditor({ initialXml, setGeneratedCode }) {
+//   const blocklyDiv = useRef(null);
+//   const iframeRef = useRef(null);
+
+//   const [workspace, setWorkspace] = useState(null);
+//   const [mode, setMode] = useState("scratch"); // 🎯 tabs state
+//   const [output, setOutput] = useState("");
+
+//   // Inject Blockly
+//   useEffect(() => {
+//     const toolbox = {
+//       kind: "categoryToolbox",
+//       contents: [
+//         {
+//           kind: "category",
+//           name: "Events ⚡",
+//           colour: "#FFD500",
+//           contents: [
+//             { kind: "block", type: "green_flag" },
+//             { kind: "block", type: "when_key" },
+//           ],
+//         },
+//         {
+//           kind: "category",
+//           name: "Motion 🎮",
+//           colour: "#FF6680",
+//           contents: [
+//             { kind: "block", type: "move_sprite" },
+//             { kind: "block", type: "turn_sprite" },
+//             { kind: "block", type: "goto_xy" },
+//           ],
+//         },
+//       ],
+//     };
+
+//     const ws = Blockly.inject(blocklyDiv.current, {
+//       toolbox,
+//       trashcan: true,
+//       zoom: { controls: true },
+//     });
+
+//     if (initialXml) {
+//       const xml = Blockly.Xml.textToDom(initialXml);
+//       Blockly.Xml.domToWorkspace(xml, ws);
+//     }
+
+//     setWorkspace(ws);
+//     return () => ws.dispose();
+//   }, [initialXml]);
+
+//   // ---------------- RUN ----------------
+
+//   const runCode = () => {
+//     if (!workspace) return;
+
+//     if (mode === "scratch") runScratch();
+//     if (mode === "js") runJS();
+//     if (mode === "python") runPython();
+//   };
+
+//   // 🎮 Scratch runtime
+//   const runScratch = () => {
+//     const code = javascriptGenerator.workspaceToCode(workspace);
+//     setGeneratedCode(code);
+
+//     const runtime = `
+//       const sprite = { x: 0, y: 0, angle: 0 };
+
+//       function render() {
+//         const el = document.getElementById("sprite");
+//         el.style.transform =
+//           "translate(" + sprite.x + "px," + sprite.y + "px) rotate(" + sprite.angle + "deg)";
+//       }
+
+//       function move(s) {
+//         sprite.x += s * Math.cos(sprite.angle * Math.PI/180);
+//         sprite.y += s * Math.sin(sprite.angle * Math.PI/180);
+//         render();
+//       }
+
+//       function turn(d) { sprite.angle += d; render(); }
+//       function goTo(x,y){ sprite.x=x; sprite.y=y; render(); }
+
+//       function __greenFlag(fn){ window.__gf = fn; }
+//       function __whenKey(k, fn){
+//         document.addEventListener("keydown", e => {
+//           if(e.key===k) fn();
+//         });
+//       }
+
+//       window.onload = () => { if(window.__gf) window.__gf(); };
+//     `;
+
+//     loadIframe(runtime, code);
+//   };
+
+//   // 🟡 JS mode
+//   const runJS = () => {
+//     const code = javascriptGenerator.workspaceToCode(workspace);
+//     setGeneratedCode(code);
+
+//     loadIframe("", code);
+//   };
+
+//   // 🐍 Python mode
+//   const runPython = () => {
+//     const code = Blockly.Python.workspaceToCode(workspace);
+//     setOutput(code); // preview only
+//   };
+
+//   // iframe loader
+//   const loadIframe = (runtime, code) => {
+//     const html = `
+//       <html>
+//         <body style="margin:0;background:#111;color:white;">
+//           <div id="sprite"
+//             style="width:50px;height:50px;background:red;position:absolute;top:50%;left:50%;">
+//           </div>
+//           <pre id="log"></pre>
+//           <script>
+//             const log = (msg)=>document.getElementById("log").innerText += msg + "\\n";
+//             ${runtime}
+//             try { ${code} } catch(e){ log(e.message) }
+//           </script>
+//         </body>
+//       </html>
+//     `;
+
+//     const blob = new Blob([html], { type: "text/html" });
+//     iframeRef.current.src = URL.createObjectURL(blob);
+//   };
+
+//   // ---------------- SAVE ----------------
+
+//   const saveProject = async () => {
+//     const xml = Blockly.Xml.domToText(
+//       Blockly.Xml.workspaceToDom(workspace)
+//     );
+
+//     const code = javascriptGenerator.workspaceToCode(workspace);
+
+//     await supabase.from("projects").insert([{ xml, code }]);
+
+//     alert("✅ Saved!");
+//   };
+
+//   // ---------------- UI ----------------
+
+//   return (
+//     <div className="w-screen h-screen flex flex-col">
+
+//       {/* 🎯 Tabs */}
+//       <div className="flex bg-gray-800 text-white">
+//         {["scratch", "js", "python"].map((m) => (
+//           <button
+//             key={m}
+//             onClick={() => setMode(m)}
+//             className={`px-4 py-2 ${mode === m ? "bg-blue-500" : "bg-gray-700"
+//               }`}
+//           >
+//             {m === "scratch" && "🎮 Scratch"}
+//             {m === "js" && "🟡 JavaScript"}
+//             {m === "python" && "🐍 Python"}
+//           </button>
+//         ))}
+//       </div>
+
+//       <div className="flex flex-1">
+//         <div ref={blocklyDiv} className="flex-1" />
+
+//         <div className="w-1/3 p-3 flex flex-col gap-2 bg-gray-900 text-white">
+//           <button onClick={runCode} className="bg-blue-500 p-2 rounded">
+//             ▶ Run
+//           </button>
+
+//           <button onClick={saveProject} className="bg-green-500 p-2 rounded">
+//             💾 Save
+//           </button>
+
+//           {mode === "python" ? (
+//             <pre className="flex-1 bg-black p-2 overflow-auto">
+//               {output || "🐍 Python code preview"}
+//             </pre>
+//           ) : (
+//             <iframe ref={iframeRef} className="flex-1 border" />
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 // src/pages/BlocklyEditor.js
 import React, { useEffect, useRef, useState } from "react";
 import * as Blockly from "blockly";
@@ -6,11 +308,53 @@ import { javascriptGenerator } from "blockly/javascript";
 import "blockly/msg/en";
 import "blockly/python"; // Python generator
 
-export default function BlocklyEditor({ initialXml, darkMode, runPython }) {
+
+Blockly.Blocks["move_sprite"] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("move")
+      .appendField(new Blockly.FieldNumber(10), "STEPS")
+      .appendField("steps");
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+    this.setColour(160);
+  },
+};
+Blockly.Blocks["green_flag"] = {
+  init: function () {
+    this.appendDummyInput().appendField("when green flag clicked");
+    this.setNextStatement(true);
+    this.setColour(60);
+  },
+};
+
+javascriptGenerator.forBlock["green_flag"] = () => {
+  return ``; // acts as entry point
+};
+Blockly.Blocks["when_key"] = {
+  init: function () {
+    this.appendDummyInput().appendField("when key pressed");
+    this.setNextStatement(true);
+    this.setColour(60);
+  },
+};
+
+javascriptGenerator.forBlock["when_key"] = () => {
+  return `// whenKey\n`;
+};
+
+javascriptGenerator.forBlock["move_sprite"] = function (block) {
+  const steps = block.getFieldValue("STEPS");
+  return `move(${steps});\n`;
+};
+
+// export default function BlocklyEditor({ initialXml, darkMode, runPython }) {
+export default function BlocklyEditor({ initialXml, darkMode, runPython, setGeneratedCode }) {
   const blocklyDiv = useRef(null);
   const iframeRef = useRef(null);
   const [workspace, setWorkspace] = useState(null);
   const [output, setOutput] = useState("");
+  // const [generatedCode, setGeneratedCode] = useState("");
 
   // --- Inject Blockly workspace ---
   useEffect(() => {
@@ -26,6 +370,23 @@ export default function BlocklyEditor({ initialXml, darkMode, runPython }) {
             { kind: "block", type: "logic_operation" },
             { kind: "block", type: "logic_negate" },
             { kind: "block", type: "logic_boolean" },
+          ]
+        },
+        {
+          kind: "category",
+          name: "Events ⚡",
+          colour: "#FFD500",
+          contents: [
+            { kind: "block", type: "green_flag" },
+            { kind: "block", type: "when_key" }
+          ]
+        },
+        {
+          kind: "category",
+          name: "Sprites 🎮",
+          colour: "#FF6680",
+          contents: [
+            { kind: "block", type: "move_sprite" }
           ]
         },
         {
@@ -106,7 +467,9 @@ export default function BlocklyEditor({ initialXml, darkMode, runPython }) {
         return;
       }
     } else {
+      // code = javascriptGenerator.workspaceToCode(workspace);
       code = javascriptGenerator.workspaceToCode(workspace);
+      setGeneratedCode(code);
     }
 
     const iframe = iframeRef.current;

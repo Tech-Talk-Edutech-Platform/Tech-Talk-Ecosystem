@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
+import { useNavigate } from 'react-router-dom'
 
 export default function StudentAssignmentManager() {
   const [courseStudents, setCourseStudents] = useState([]);
@@ -10,6 +11,7 @@ export default function StudentAssignmentManager() {
   const [expandedStudentId, setExpandedStudentId] = useState(null);
   const [studentDetails, setStudentDetails] = useState({});
   const [activeFilter, setActiveFilter] = useState("all");
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchData();
@@ -115,8 +117,14 @@ export default function StudentAssignmentManager() {
     setExpandedStudentId(student.id);
   }
 
-  if (loading) return <p>Loading...</p>;
-
+  if (loading) return (
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white font-mono">
+      <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <span className="text-gray-600 tracking-widest uppercase text-xs mt-4 font-bold">
+        Fetching...
+      </span>
+    </div>
+  );
   const allStudents = [
     ...courseStudents.map((s) => ({ ...s, type: "course" })),
     ...trialStudents.map((s) => ({ ...s, type: "trial" })),
@@ -140,11 +148,16 @@ export default function StudentAssignmentManager() {
   ).length;
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-6">
+    <div className="p-7">
+      {/* <h2 className="text-xl font-semibold mb-6">
         Student Tutor Assignments
-      </h2>
-
+      </h2> */}
+      <button
+        onClick={() => navigate(`/:role`)}
+        className="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl font-bold text-sm mb-3"
+      >
+        ← Back
+      </button>
       {/* ✅ STATS CARDS */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="p-4 bg-white shadow rounded-xl">
