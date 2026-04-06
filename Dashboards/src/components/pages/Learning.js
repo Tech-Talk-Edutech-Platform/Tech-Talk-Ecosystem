@@ -345,7 +345,7 @@ export default function LearningPage({ user }) {
   // const location = useLocation();
   const { id: courseId } = useParams();
 
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [classStarted, setClassStarted] = useState(false);
   const [nextClass, setNextClass] = useState(null);
   const [selectedNote, setSelectedNote] = useState(null);

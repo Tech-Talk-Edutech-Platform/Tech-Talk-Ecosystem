@@ -75,8 +75,16 @@ export default function App() {
         {/* <Route path="/" element={<Login />} /> */}
         <Route
           path="/"
-          element={user ? <Navigate to={`/${user.user_metadata.role}`} /> : <Login />}
+          element={
+            user
+              ? <Navigate to={`/${user.user_metadata?.role || "student"}`} />
+              : <Login />
+          }
         />
+        {/* <Route
+          path="/"
+          element={user ? <Navigate to={`/${user.user_metadata.role}`} /> : <Login />}
+        /> */}
         {/* AUTHENTICATED DASHBOARD */}
         <Route
           path="/:role"
