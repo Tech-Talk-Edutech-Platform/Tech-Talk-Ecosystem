@@ -334,7 +334,7 @@ export default function StudentList({ tutorId }) {
         .order("created_at", { ascending: false });
 
       const { data: notesData } = await supabase
-        .from("student_notes_progress")
+        .from("user_notes_progress")
         .select("*")
         .eq("student_id", selectedStudent.id)
         .single();
