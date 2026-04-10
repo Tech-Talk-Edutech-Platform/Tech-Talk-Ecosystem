@@ -427,7 +427,7 @@ export default function StudentList({ tutorId }) {
 
       // <span className="text-xs font-bold">{s.progress || 0}%</span>
           <span className="text-xs font-bold">
-  {s.progress || (i === 0 ? 10 : i === 1 ? 15 : 0)}%
+  {s.progress ? s.progress : 15}%
 </span>
           
     </div>
