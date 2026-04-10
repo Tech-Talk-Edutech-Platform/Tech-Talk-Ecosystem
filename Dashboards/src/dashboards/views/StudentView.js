@@ -12,10 +12,10 @@ import QuickActions from "../../components/QuickActions";
 
 export default function StudentView({ tutorId, userId, courseId, initialStats = {} }) {
   const [stats, setStats] = useState({
-    lessonsCount: 0,
+    lessonsCount: 4,
     pendingTasks: 0,
-    points: 0,
-    nextLessonTime: "TBD",
+    points: 80,
+    nextLessonTime: "{ hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' }",
     ...initialStats
   });
 
