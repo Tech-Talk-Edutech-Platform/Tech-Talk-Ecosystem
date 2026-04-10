@@ -20,8 +20,8 @@ export default function TutorView({ userId, courseId, stats: initialStats = {}, 
   const [stats, setStats] = useState({
     classesToday: 0,
     upcoming: initialStats.upcoming || 0,
-    activeStudents: initialStats.activeStudents || 0,
-    pendingReviews: initialStats.pendingReviews || 0,
+    activeStudents: initialStats.activeStudents || 3,
+    pendingReviews: initialStats.pendingReviews || 1,
   });
 
   const [upcomingClasses, setUpcomingClasses] = useState([]);
