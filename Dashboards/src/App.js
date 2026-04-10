@@ -71,7 +71,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* PUBLIC ROUTES */}
-        {/* <Route path="/" element={<LandingOrDashboard user={user} />} /> */}
+         <Route path="/trial" element={<LandingOrDashboard user={user}
         {/* <Route path="/" element={<Login />} /> */}
         <Route
           path="/"
