@@ -425,7 +425,7 @@ export default function StudentList({ tutorId }) {
         <p className="text-xs text-slate-400">{s.course_name}</p>
       </div>
 
-      <span className="text-xs font-bold">{s.progress || 0}%</span>
+      // <span className="text-xs font-bold">{s.progress || 0}%</span>
        
           
     </div>
