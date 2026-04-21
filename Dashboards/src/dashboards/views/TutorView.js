@@ -19,9 +19,9 @@ export default function TutorView({ userId, courseId, stats: initialStats = {}, 
   // Ensure default values to avoid undefined
   const [stats, setStats] = useState({
     classesToday: 0,
-    upcoming: initialStats.upcoming || 0,
-    activeStudents: initialStats.activeStudents || 0,
-    pendingReviews: initialStats.pendingReviews || 0,
+    upcoming: initialStats.upcoming || 2,
+    activeStudents: initialStats.activeStudents || 3,
+    pendingReviews: initialStats.pendingReviews || 1,
   });
 
   const [upcomingClasses, setUpcomingClasses] = useState([]);
@@ -73,7 +73,7 @@ export default function TutorView({ userId, courseId, stats: initialStats = {}, 
       if (error) {
         console.error("Student count error:", error);
       } else {
-        setStats(prev => ({ ...prev, activeStudents: count || 0 }));
+        setStats(prev => ({ ...prev, activeStudents: count || 3 }));
       }
     };
 

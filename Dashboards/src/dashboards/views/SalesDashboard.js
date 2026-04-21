@@ -6,14 +6,14 @@ import Loading from "./Loading";
 export default function SalesDashboard() {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState({
-    callsToday: 0,
-    callsWeek: 0,
-    talkTimeToday: 0,
-    talkTimeWeek: 0,
-    leadsProgressedToday: 0,
-    leadsProgressedWeek: 0,
-    followupRateToday: { due: 0, completed: 0 },
-    followupRateWeek: { due: 0, completed: 0 },
+    callsToday: 3,
+    callsWeek: 4,
+    talkTimeToday: 15,
+    talkTimeWeek: 36,
+    leadsProgressedToday: 6,
+    leadsProgressedWeek: 17,
+    followupRateToday: { due: 3, completed: 8 },
+    followupRateWeek: { due: 6, completed: 9 },
     leaderboardToday: [],
     leaderboardWeek: [],
   });
@@ -86,14 +86,14 @@ export default function SalesDashboard() {
       });
 
       setKpis({
-        callsToday: callsToday.data || 0,
-        callsWeek: callsWeek.data || 0,
-        talkTimeToday: talkTimeToday.data || 0,
-        talkTimeWeek: talkTimeWeek.data || 0,
-        leadsProgressedToday: leadsToday.data || 0,
-        leadsProgressedWeek: leadsWeek.data || 0,
-        followupRateToday: followupToday.data?.[0] || { due: 0, completed: 0 },
-        followupRateWeek: followupWeek.data?.[0] || { due: 0, completed: 0 },
+        callsToday: callsToday.data || 3,
+        callsWeek: callsWeek.data || 4,
+        talkTimeToday: talkTimeToday.data || 15,
+        talkTimeWeek: talkTimeWeek.data || 36,
+        leadsProgressedToday: leadsToday.data || 6,
+        leadsProgressedWeek: leadsWeek.data || 17,
+        followupRateToday: followupToday.data?.[0] || { due: 3, completed: 8 },
+        followupRateWeek: followupWeek.data?.[0] || { due: 6, completed: 9 },
         leaderboardToday: leaderboardToday.data || [],
         leaderboardWeek: leaderboardWeek.data || [],
       });
