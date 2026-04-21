@@ -68,7 +68,7 @@ export default function RoleGate({ children, allowedRoles = [] }) {
         <button 
           onClick={async () => {
             await supabase.auth.signOut();
-            navigate("/login");
+            navigate("/");
           }} 
           className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-[20px] font-black uppercase tracking-widest text-xs hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
         >
