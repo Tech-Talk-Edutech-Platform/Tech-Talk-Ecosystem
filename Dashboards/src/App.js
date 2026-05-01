@@ -15,6 +15,8 @@ import UserManagement from "./components/UserManagement";
 import { useParams } from "react-router-dom";
 import AdminNotesManager from "./components/AdminNotesManager";
 import StudentAssignmentManager from "./components/StudentAssignmentManager";
+import CreateExam from "./dashboards/views/CreateExam";
+import ExamPage from "./dashboards/views/ExamPage";
 
 const UserManagementPage = () => {
   const { role } = useParams();
@@ -71,7 +73,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* PUBLIC ROUTES */}
-  {/*<Route path="/trial" element={<LandingOrDashboard user={user}*/}
+        {/*<Route path="/trial" element={<LandingOrDashboard user={user}*/}
         {/* <Route path="/" element={<Login />} /> */}
         <Route
           path="/"
@@ -112,6 +114,8 @@ export default function App() {
           path="/learning/:id"
           element={<LearningPage user={user} />}
         />
+        <Route path="/create-exam" element={<CreateExam />} />
+        <Route path="/exam/:id" element={<ExamPage />} />
 
         {/* FALLBACK: Redirect any unknown routes to home */}
         <Route path="*" element={<Navigate to="/" replace />} />

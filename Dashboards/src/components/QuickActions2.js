@@ -26,6 +26,8 @@ import MyHomework from "./MyHomework";
 export default function QuickActions2({ userId, role, courseId }) {
   const navigate = useNavigate();
 
+  const [exams, setExams] = useState([]);
+  const [showExamModal, setShowExamModal] = useState(false);
   // Modal States
   // const [showUserManagement, setShowUserManagement] = useState(false);
   const [showStudentTutorAssignment, setShowStudentTutorAssignment] = useState(false);
@@ -39,7 +41,7 @@ export default function QuickActions2({ userId, role, courseId }) {
 
   const [showTutorNotesModal, setShowTutorNotesModal] = useState(false);
   const [studentsWithCourses, setStudentsWithCourses] = useState([]);
-
+  const [showExamForm, setShowExamForm] = useState(false);
 
   // Data States
   const [students, setStudents] = useState([]);
@@ -53,12 +55,14 @@ export default function QuickActions2({ userId, role, courseId }) {
     student: [
       { label: "My Homework", icon: Star, color: "bg-amber-400" },
       { label: "Class Notes", icon: BookOpen, color: "bg-indigo-500" },
+      { label: "Take Exam", icon: CheckCircle, color: "bg-green-600" }
     ],
     owner: [
       { label: "User Management", icon: ShieldAlert, color: "bg-indigo-600" },
       { label: "Trial Student/Tutor Assignments", icon: FileText, color: "bg-emerald-600" },
       { label: "Add Notes", icon: BookOpen, color: "bg-indigo-500" },
       { label: "Invoices & Receipts", icon: FileText, color: "bg-green-500" },
+      { label: "Create Exam", icon: FileText, color: "bg-purple-600" }
     ],
     tutor: [
       { label: "Trial Class Material", icon: Star, color: "bg-amber-400" },
@@ -87,6 +91,14 @@ export default function QuickActions2({ userId, role, courseId }) {
       .order("full_name");
     if (data) setStudentsWithCourses(data);
   };
+  const fetchExams = async () => {
+    const { data } = await supabase
+      .from("exams")
+      .select("id, title")
+      .order("created_at", { ascending: false });
+
+    if (data) setExams(data);
+  };
   // 2. UPDATED ACTION CLICK HANDLER
   const handleActionClick = async (label) => {
     // if (label === "User Management") return setShowUserManagement(true);
@@ -97,11 +109,23 @@ export default function QuickActions2({ userId, role, courseId }) {
       return navigate("/student-assignment"); // new page
     }
     if (label === "Trial Class Material") return setShowTrialMaterial(true);
+
+    // if (label === "Take Exam") {
+    //   await fetchExams();
+    //   return setShowExamModal(true);
+    // }
+    if (label === "Take Exam") {
+      return setShowExamForm(true);
+    }
     if (label === "My Homework") return setShowHomeworkModal(true);
     if (label === "Invoices & Receipts") return setShowInvoicesModal(true);
     if (label === "Add Notes") {
       return navigate("/upload-notes"); // new page
     }
+    if (label === "Create Exam") {
+      return navigate("/create-exam");
+    }
+
 
     if (label === "Course Assignment") {
       await fetchTutorStudents();
@@ -135,6 +159,7 @@ export default function QuickActions2({ userId, role, courseId }) {
         return;
       }
     }
+
   };
 
   const handleSelectStudent = async (studentId) => {
@@ -215,7 +240,15 @@ export default function QuickActions2({ userId, role, courseId }) {
           <MyHomework studentId={userId} />
         </Modal>
       )}
-
+      {showExamForm && (
+        <Modal title="Exam" onClose={() => setShowExamForm(false)}>
+          <iframe
+            src="https://form.typeform.com/to/Tz2QEJqO"
+            className="w-full h-[1000px] border-0 rounded-xl"
+            allow="camera; microphone; autoplay; encrypted-media;"
+          />
+        </Modal>
+      )}
       {showTrialMaterial && (
         <Modal title="Trial Class Material" onClose={() => setShowTrialMaterial(false)}>
           <iframe src={GOOGLE_DOC_URL} className="w-full h-[600px] border rounded-lg" title="Trial Material" />
@@ -261,7 +294,24 @@ export default function QuickActions2({ userId, role, courseId }) {
           <Sales />
         </Modal>
       )}
-
+      {showExamModal && (
+        <Modal title="Select Exam" onClose={() => setShowExamModal(false)}>
+          <div className="grid gap-3">
+            {exams.length > 0 ? exams.map((exam) => (
+              <button
+                key={exam.id}
+                onClick={() => navigate(`/exam/${exam.id}`)}
+                className="p-4 bg-slate-50 hover:bg-indigo-50 rounded-xl text-left"
+              >
+                <p className="font-bold">{exam.title}</p>
+                <p className="text-xs text-slate-500">Start Exam</p>
+              </button>
+            )) : (
+              <p className="text-slate-400">No exams available</p>
+            )}
+          </div>
+        </Modal>
+      )}
       {showFeedbackModal && (
         <Modal title="Student Feedback" onClose={() => setShowFeedbackModal(false)}>
           <iframe src={TUTOR_FEEDBACK_FORM} className="w-full h-[600px] border rounded-lg" title="Feedback Form" />
