@@ -23,7 +23,7 @@ const AdminEntryForm = () => {
     performance_label: 'Excellent', // Default label
     tutor_feedback: '',
     project_url: '',
-    project_label: ''
+    performance_label: ''
   };
 
   const [formData, setFormData] = useState(initialState);
@@ -135,7 +135,7 @@ const AdminEntryForm = () => {
             </div>
             <div className="flex gap-2 items-center bg-white p-2 border rounded-lg">
               <Star size={16} className="text-yellow-500" />
-              <input name="project_label" value={formData.project_label} onChange={handleChange} placeholder="Project Badge (e.g. App Master)" className="w-full outline-none text-sm" />
+              <input name="performance_label" value={formData.performance_label} onChange={handleChange} placeholder="Project Badge (e.g. App Master)" className="w-full outline-none text-sm" />
             </div>
           </div>
         </div>
