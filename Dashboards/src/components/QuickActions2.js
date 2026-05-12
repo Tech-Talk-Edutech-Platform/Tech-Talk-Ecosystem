@@ -178,7 +178,7 @@ export default function QuickActions2({ userId, role, courseId }) {
     <>
       <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-black text-slate-900">Quick Actions</h3>
+          <h3 className="text-xl font-black text-slate-900">Actions</h3>
           <span className="px-2 py-1 bg-slate-50 text-slate-400 rounded-lg text-[10px] font-bold uppercase">
             {role}
           </span>
