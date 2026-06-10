@@ -245,9 +245,9 @@ const StudentDashboard = () => {
             <MessageSquare size={18} /> Tutor Feedback
           </div>
 
-          <p className="text-sm text-indigo-50 italic leading-relaxed font-medium">
-            "{latest.tutor_feedback}"
-          </p>
+         <p className="text-sm text-indigo-50 italic leading-relaxed font-medium whitespace-pre-line">
+  "{latest.tutor_feedback}"
+</p>
         </div>
       </div>
 
