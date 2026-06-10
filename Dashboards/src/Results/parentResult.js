@@ -45,7 +45,6 @@ const StudentDashboard = () => {
 
   const latest = data.find(d => d.id === selectedId) || data[0];
 
-  // AVERAGES
   const avg = data.length
     ? {
         overall: data.reduce((s, i) => s + (i.overall_score || 0), 0) / data.length,
@@ -161,8 +160,11 @@ const StudentDashboard = () => {
                     {item.exam_title}
                   </h3>
 
+                  {/* ONLY CHANGE HERE */}
                   <p className="text-[10px] text-gray-400 mt-1">
-                    Score: {item.overall_score}%
+                    {item.created_at
+                      ? new Date(item.created_at).toDateString()
+                      : 'No date'}
                   </p>
                 </div>
               </div>
@@ -177,7 +179,7 @@ const StudentDashboard = () => {
         ))}
       </div>
 
-      {/* 🔥 IMPROVED AVERAGE SUMMARY (ONLY CHANGE) */}
+      {/* AVERAGE SUMMARY */}
       <div className="p-4">
         <h2 className="font-bold text-gray-800 mb-3 text-sm px-1 uppercase tracking-wide">
           Average Summary
