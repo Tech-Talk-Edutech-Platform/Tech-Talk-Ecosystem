@@ -17,7 +17,7 @@ import {
 
 const StudentDashboard = () => {
   const { slug } = useParams();
-  const [data, setData] = useState([]); // FIX: must be array
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -36,7 +36,8 @@ const StudentDashboard = () => {
 
     if (error) console.error("Fetch Error:", error.message);
 
-    setData(data || []); // FIX
+    if (data) setData(data);
+
     setLoading(false);
   }
 
@@ -44,7 +45,7 @@ const StudentDashboard = () => {
     try {
       setUploading(true);
       const file = e.target.files[0];
-      if (!file || !data?.[0]?.id) return; // FIX
+      if (!file || !data?.length) return;
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${data[0].id}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -56,24 +57,20 @@ const StudentDashboard = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
+      const { data: { publicUrl } } = supabase.storage
         .from('student-assets')
         .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
 
       const { error: updateError } = await supabase
         .from('student_results')
         .update({ avatar_url: publicUrl })
-        .eq('id', data[0].id); // FIX
+        .eq('id', data[0].id);
 
       if (updateError) throw updateError;
 
-      setData(prev =>
-        prev.map((item, i) =>
-          i === 0 ? { ...item, avatar_url: publicUrl } : item
-        )
-      );
+      const updated = [...data];
+      updated[0].avatar_url = publicUrl;
+      setData(updated);
 
       alert("Profile picture updated!");
     } catch (err) {
@@ -86,13 +83,12 @@ const StudentDashboard = () => {
   if (loading) return <div className="p-10 text-center animate-pulse font-sans">Fetching Report Card...</div>;
   if (!data.length) return <div className="p-10 text-center font-sans">Result not found.</div>;
 
-  const latest = data[0]; // FIX: latest record
+  const latest = data[0];
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20 font-sans shadow-2xl">
 
-      {/* EVERYTHING BELOW IS YOUR ORIGINAL UI UNCHANGED */}
-      
+      {/* 1. HEADER SECTION */}
       <div className="bg-white p-6 rounded-b-3xl shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-4">
           <div className="relative group">
@@ -108,7 +104,6 @@ const StudentDashboard = () => {
                 <User size={40} className="text-indigo-500" />
               )}
             </div>
-
             <label className="absolute bottom-0 right-0 bg-indigo-600 p-1.5 rounded-full text-white cursor-pointer shadow-lg hover:scale-110 transition-transform">
               <Camera size={14} />
               <input
@@ -126,54 +121,128 @@ const StudentDashboard = () => {
             <p className="text-sm text-indigo-600 font-semibold">
               Grade {latest.grade_level} • {latest.course_name}
             </p>
+            <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-600 text-[10px] font-bold rounded-full uppercase">
+              Active Student
+            </span>
           </div>
         </div>
       </div>
 
-      {/* LIST OF EXAMS (FIXED SAFELY) */}
-      <div className="px-4 mb-2">
-        {data.map((item) => (
-          <div key={item.id}>
-            <h3>{item.exam_title}</h3>
-            <p>{item.overall_score}%</p>
+      {/* 2. PROJECT SHOWCASE */}
+      {latest.project_url && (
+        <div className="p-4">
+          <div className="bg-gradient-to-br from-orange-500 to-pink-500 p-5 rounded-2xl shadow-lg text-white">
+            <div className="flex items-center gap-2 mb-2 font-bold uppercase text-xs tracking-widest">
+              <Rocket size={18} /> Student Project
+            </div>
+            <h3 className="text-lg font-black mb-3">
+              See what {latest.student_name.split(' ')[0]} built!
+            </h3>
+            <a
+              href={latest.project_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center gap-2 w-full bg-white text-orange-600 font-black py-3 rounded-xl shadow-md active:scale-95 transition-all"
+            >
+              Launch Project <ExternalLink size={18} />
+            </a>
           </div>
-        ))}
+        </div>
+      )}
 
+      {/* 3. OVERALL PERFORMANCE */}
+      <div className="p-4">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50">
+          <h2 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide px-1">
+            Overall Performance
+          </h2>
+
+          <div className="flex items-center gap-6">
+            <div className="relative w-24 h-24 flex items-center justify-center border-[10px] border-green-500 rounded-full">
+              <div className="text-center">
+                <span className="text-2xl font-black text-gray-800">
+                  {latest.overall_score}%
+                </span>
+                <p className="text-[8px] text-green-500 font-bold uppercase">
+                  {latest.performance_label || 'Score'}
+                </p>
+              </div>
+            </div>
+
+            <p className="flex-1 text-sm text-gray-600 leading-tight">
+              <span className="font-bold text-gray-800">
+                {latest.performance_label || 'Great Job'}!
+              </span>{' '}
+              {latest.student_name.split(' ')[0]} is performing excellently in this course.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. LATEST EXAM CARD (FIXED LOOP) */}
+      <div className="px-4 mb-2">
         <div className="flex justify-between items-center mb-3 px-1">
           <h2 className="font-bold text-gray-800 text-sm uppercase tracking-wide">
             Latest Exam Result
           </h2>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl shadow-sm border-l-[6px] border-indigo-500">
-          <div className="flex justify-between items-start">
-            <div className="flex gap-3">
-              <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600">
-                <BookOpen size={20} />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-800 text-sm leading-tight">
-                  {latest.exam_title}
-                </h3>
-                <div className="flex items-center gap-1 text-gray-400 text-[10px] mt-1 font-medium">
-                  <Calendar size={12} />
-                  {latest.exam_date ? new Date(latest.exam_date).toDateString() : 'Recent'}
+        {data.map((item) => (
+          <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border-l-[6px] border-indigo-500 mb-3">
+            <div className="flex justify-between items-start">
+              <div className="flex gap-3">
+                <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600">
+                  <BookOpen size={20} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-800 text-sm leading-tight">
+                    {item.exam_title}
+                  </h3>
+                  <div className="flex items-center gap-1 text-gray-400 text-[10px] mt-1 font-medium">
+                    <Calendar size={12} />{' '}
+                    {item.exam_date ? new Date(item.exam_date).toDateString() : 'Recent'}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xl font-black text-green-500">
-                {latest.overall_score}%
+
+              <div className="text-right">
+                <div className="text-xl font-black text-green-500">
+                  {item.overall_score}%
+                </div>
+                <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                  Score
+                </p>
               </div>
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
-                Score
-              </p>
             </div>
           </div>
+        ))}
+      </div>
+
+      {/* 5. SKILL BREAKDOWN */}
+      <div className="p-4">
+        <h2 className="font-bold text-gray-800 mb-3 text-sm px-1 uppercase tracking-wide">
+          Section Breakdown
+        </h2>
+
+        <div className="space-y-4 bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
+          <StatRow label="Theory" score={latest.theory_score} icon={<Code size={16} />} color="bg-red-50 text-red-500" />
+          <StatRow label="Practical" score={latest.practical_score} icon={<Monitor size={16} />} color="bg-blue-50 text-blue-500" />
+          <StatRow label="Logic" score={latest.problem_solving_score} icon={<Lightbulb size={16} />} color="bg-yellow-50 text-yellow-500" />
+          <StatRow label="Creative" score={latest.creativity_score} icon={<Star size={16} />} color="bg-purple-50 text-purple-500" />
         </div>
       </div>
 
-      {/* KEEP YOUR REST EXACT SAME */}
+      {/* 6. TUTOR FEEDBACK */}
+      <div className="px-4">
+        <div className="bg-indigo-600 p-5 rounded-2xl shadow-lg">
+          <div className="flex gap-2 items-center text-white font-bold mb-2 text-sm uppercase">
+            <MessageSquare size={18} /> Tutor Feedback
+          </div>
+          <p className="text-sm text-indigo-50 italic leading-relaxed font-medium">
+            "{latest.tutor_feedback}"
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
@@ -183,17 +252,12 @@ const StatRow = ({ label, score, icon, color }) => (
     <div className="flex justify-between items-center mb-1">
       <div className="flex items-center gap-2">
         <div className={`${color} p-1.5 rounded-lg`}>{icon}</div>
-        <span className="text-xs font-bold text-gray-600 uppercase tracking-tighter">
-          {label}
-        </span>
+        <span className="text-xs font-bold text-gray-600 uppercase tracking-tighter">{label}</span>
       </div>
       <div className="text-xs font-black text-gray-800">{score}%</div>
     </div>
     <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-      <div
-        className="bg-green-500 h-full rounded-full transition-all duration-1000"
-        style={{ width: `${score}%` }}
-      />
+      <div className="bg-green-500 h-full rounded-full" style={{ width: `${score}%` }}></div>
     </div>
   </div>
 );
