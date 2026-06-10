@@ -31,11 +31,8 @@ const StudentDashboard = () => {
       .from('student_results')
       .select('*')
       .eq('slug', slug)
-      // .single();
-  .order('exam_date', { ascending: false });
-    if (error) console.error("Fetch Error:", error.message);
-    if (data) setData(data);
-    setLoading(false);
+      .single();
+
   }
 
   const handleAvatarChange = async (e) => {
@@ -165,13 +162,6 @@ const StudentDashboard = () => {
 
       {/* 4. LATEST EXAM CARD */}
       <div className="px-4 mb-2">
-
-        {data.map((item) => (
-  <div key={item.id}>
-    <h3>{item.exam_title}</h3>
-    <p>{item.overall_score}%</p>
-  </div>
-))}
         <div className="flex justify-between items-center mb-3 px-1">
           <h2 className="font-bold text-gray-800 text-sm uppercase tracking-wide">Latest Exam Result</h2>
         </div>
