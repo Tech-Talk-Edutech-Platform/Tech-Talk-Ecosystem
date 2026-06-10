@@ -2,9 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import {
-  User, Calendar, BookOpen, Code, Monitor,
-  Lightbulb, Star, MessageSquare, Rocket,
-  ExternalLink, Camera
+  User,
+  Calendar,
+  BookOpen,
+  Code,
+  Monitor,
+  Lightbulb,
+  Star,
+  MessageSquare,
+  Rocket,
+  ExternalLink,
+  Camera
 } from 'lucide-react';
 
 const StudentDashboard = () => {
@@ -31,8 +39,8 @@ const StudentDashboard = () => {
     if (error) console.error("Fetch Error:", error.message);
 
     if (data && data.length > 0) {
-      setResults(data);
-      setStudent(data[0]); // use latest for header + summary
+      setStudent(data[0]);   // header info
+      setResults(data);      // full exam list
     }
 
     setLoading(false);
@@ -48,7 +56,7 @@ const StudentDashboard = () => {
       const fileName = `${student.id}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      let { error: uploadError } = await supabase.storage
         .from('student-assets')
         .upload(filePath, file);
 
@@ -61,7 +69,7 @@ const StudentDashboard = () => {
       const { error: updateError } = await supabase
         .from('student_results')
         .update({ avatar_url: publicUrl })
-        .eq('id', student.id);
+        .eq('slug', slug);
 
       if (updateError) throw updateError;
 
@@ -74,79 +82,91 @@ const StudentDashboard = () => {
     }
   };
 
-  if (loading) return <div className="p-10 text-center">Loading...</div>;
-  if (!student) return <div className="p-10 text-center">Result not found</div>;
+  if (loading) return <div className="p-10 text-center animate-pulse font-sans">Fetching Report Card...</div>;
+  if (!student) return <div className="p-10 text-center font-sans">Result not found.</div>;
+
+  const latest = results[0];
 
   return (
-    <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20">
+    <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20 font-sans shadow-2xl">
 
       {/* HEADER */}
-      <div className="bg-white p-6 rounded-b-3xl">
+      <div className="bg-white p-6 rounded-b-3xl shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center">
+          <div className="w-20 h-20 bg-indigo-100 rounded-full overflow-hidden border-4 border-white shadow-inner flex items-center justify-center">
             {student.avatar_url ? (
               <img src={student.avatar_url} className="w-full h-full object-cover" />
             ) : (
-              <User size={40} />
+              <User size={40} className="text-indigo-500" />
             )}
           </div>
 
-          <div>
-            <h1 className="font-bold text-xl">{student.student_name}</h1>
-            <p className="text-indigo-600 text-sm">
+          <div className="flex-1">
+            <h1 className="text-xl font-extrabold text-gray-800">{student.student_name}</h1>
+            <p className="text-sm text-indigo-600 font-semibold">
               Grade {student.grade_level} • {student.course_name}
             </p>
           </div>
         </div>
       </div>
 
-      {/* OVERALL (LATEST) */}
+      {/* PROJECT */}
+      {latest?.project_url && (
+        <div className="p-4">
+          <div className="bg-gradient-to-br from-orange-500 to-pink-500 p-5 rounded-2xl text-white">
+            <h3 className="text-lg font-black">Latest Project</h3>
+            <a href={latest.project_url} className="block mt-2 underline">
+              Open Project
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* OVERALL */}
       <div className="p-4">
-        <div className="bg-white p-4 rounded-xl">
-          <h2 className="font-bold mb-2">Latest Performance</h2>
-          <p className="text-2xl font-bold text-green-600">
-            {student.overall_score}%
-          </p>
-          <p className="text-sm">{student.performance_label}</p>
+        <div className="bg-white p-5 rounded-2xl">
+          <div className="text-2xl font-black">{latest?.overall_score || 0}%</div>
+          <p className="text-sm">{latest?.performance_label}</p>
         </div>
       </div>
 
-      {/* ALL EXAMS LIST */}
+      {/* EXAMS LIST (FIXED) */}
       <div className="px-4">
-        <h2 className="font-bold mb-2">All Exam Results</h2>
+        <h2 className="font-bold mb-2">All Exams</h2>
 
         {results.map((item) => (
-          <div key={item.id} className="bg-white p-3 mb-2 rounded-lg">
-            <h3 className="font-bold">{item.exam_title}</h3>
-            <p className="text-green-600">{item.overall_score}%</p>
-            <p className="text-xs text-gray-500">
-              {item.exam_date ? new Date(item.exam_date).toDateString() : ''}
-            </p>
+          <div key={item.id} className="bg-white p-3 mb-2 rounded-xl">
+            <h3 className="font-bold text-sm">{item.exam_title}</h3>
+            <p className="text-green-600 font-bold">{item.overall_score}%</p>
           </div>
         ))}
       </div>
 
       {/* BREAKDOWN (LATEST ONLY) */}
       <div className="p-4">
-        <h2 className="font-bold mb-2">Section Breakdown</h2>
-
-        <Stat label="Theory" score={student.theory_score} />
-        <Stat label="Practical" score={student.practical_score} />
-        <Stat label="Logic" score={student.problem_solving_score} />
-        <Stat label="Creative" score={student.creativity_score} />
+        <div className="bg-white p-5 rounded-2xl">
+          <StatRow label="Theory" score={latest?.theory_score || 0} icon={<Code size={16} />} color="bg-red-50 text-red-500" />
+          <StatRow label="Practical" score={latest?.practical_score || 0} icon={<Monitor size={16} />} color="bg-blue-50 text-blue-500" />
+          <StatRow label="Logic" score={latest?.problem_solving_score || 0} icon={<Lightbulb size={16} />} color="bg-yellow-50 text-yellow-500" />
+          <StatRow label="Creative" score={latest?.creativity_score || 0} icon={<Star size={16} />} color="bg-purple-50 text-purple-500" />
+        </div>
       </div>
+
     </div>
   );
 };
 
-const Stat = ({ label, score }) => (
-  <div className="mb-2">
-    <div className="flex justify-between text-sm">
-      <span>{label}</span>
-      <span>{score}%</span>
+const StatRow = ({ label, score, icon, color }) => (
+  <div>
+    <div className="flex justify-between mb-1">
+      <div className="flex items-center gap-2">
+        <div className={`${color} p-1 rounded`}>{icon}</div>
+        <span className="text-xs font-bold">{label}</span>
+      </div>
+      <span className="text-xs font-bold">{score}%</span>
     </div>
-    <div className="h-2 bg-gray-200 rounded">
-      <div className="h-2 bg-green-500 rounded" style={{ width: `${score}%` }} />
+    <div className="h-2 bg-gray-100 rounded">
+      <div className="bg-green-500 h-full" style={{ width: `${score}%` }} />
     </div>
   </div>
 );
