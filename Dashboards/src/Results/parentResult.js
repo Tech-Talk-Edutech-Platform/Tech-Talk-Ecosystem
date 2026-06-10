@@ -17,7 +17,7 @@ import {
 
 const StudentDashboard = () => {
   const { slug } = useParams();
-  const [data, setData] = useState([]); // ✅ must be array for multiple exams
+  const [data, setData] = useState([]); // FIX: array for multiple exams
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -32,12 +32,11 @@ const StudentDashboard = () => {
       .from('student_results')
       .select('*')
       .eq('slug', slug)
-      .order('exam_date', { ascending: false }); // ✅ now valid
+      .order('exam_date', { ascending: false });
 
     if (error) console.error("Fetch Error:", error.message);
 
-    if (data) setData(data); // ✅ array of exams
-
+    if (data) setData(data); // FIX
     setLoading(false);
   }
 
@@ -45,7 +44,7 @@ const StudentDashboard = () => {
     try {
       setUploading(true);
       const file = e.target.files[0];
-      if (!file || !data?.length) return;
+      if (!file || !data?.[0]?.id) return;
 
       const fileExt = file.name.split('.').pop();
       const fileName = `${data[0].id}-${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -57,9 +56,11 @@ const StudentDashboard = () => {
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('student-assets')
         .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
 
       const { error: updateError } = await supabase
         .from('student_results')
@@ -69,8 +70,8 @@ const StudentDashboard = () => {
       if (updateError) throw updateError;
 
       setData(prev =>
-        prev.map(item =>
-          item.id === data[0].id ? { ...item, avatar_url: publicUrl } : item
+        prev.map((item, i) =>
+          i === 0 ? { ...item, avatar_url: publicUrl } : item
         )
       );
 
@@ -85,7 +86,7 @@ const StudentDashboard = () => {
   if (loading) return <div className="p-10 text-center animate-pulse font-sans">Fetching Report Card...</div>;
   if (!data.length) return <div className="p-10 text-center font-sans">Result not found.</div>;
 
-  const latest = data[0]; // ✅ latest exam
+  const latest = data[0]; // FIX: latest exam
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20 font-sans shadow-2xl">
@@ -97,7 +98,8 @@ const StudentDashboard = () => {
             <div className="w-20 h-20 bg-indigo-100 rounded-full overflow-hidden border-4 border-white shadow-inner flex items-center justify-center">
               {latest.avatar_url && latest.avatar_url.trim() !== "" ? (
                 <img
-                  src={`${latest.avatar_url}?t=${Date.now()}`}
+                  key={latest.avatar_url}
+                  src={`${latest.avatar_url}?t=${new Date().getTime()}`}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -106,9 +108,15 @@ const StudentDashboard = () => {
               )}
             </div>
 
-            <label className="absolute bottom-0 right-0 bg-indigo-600 p-1.5 rounded-full text-white cursor-pointer shadow-lg hover:scale-110 transition-transform">
+            <label className="absolute bottom-0 right-0 bg-indigo-600 p-1.5 rounded-full text-white cursor-pointer">
               <Camera size={14} />
-              <input type="file" className="hidden" onChange={handleAvatarChange} />
+              <input
+                type="file"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={uploading}
+                accept="image/*"
+              />
             </label>
           </div>
 
@@ -121,33 +129,45 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* ALL EXAMS FLAT LIST */}
-      <div className="px-4 mt-4 space-y-3">
+      {/* OVERALL */}
+      <div className="p-4">
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50">
+          <div className="text-2xl font-black">{latest.overall_score}%</div>
+          <div className="text-sm text-gray-600">{latest.performance_label}</div>
+        </div>
+      </div>
+
+      {/* LIST ALL EXAMS (FLAT SIMPLE) */}
+      <div className="px-4">
         {data.map((item) => (
-          <div key={item.id} className="bg-white p-4 rounded-xl shadow">
+          <div key={item.id} className="bg-white p-3 mb-3 rounded-xl shadow-sm">
             <h3 className="font-bold">{item.exam_title}</h3>
-            <p className="text-green-600 font-black">{item.overall_score}%</p>
-            <p className="text-xs text-gray-400">
-              {item.exam_date ? new Date(item.exam_date).toDateString() : "Recent"}
-            </p>
+            <p className="text-green-600 font-bold">{item.overall_score}%</p>
           </div>
         ))}
       </div>
 
-      {/* LATEST EXAM DETAILS */}
-      <div className="px-4 mt-4">
+      {/* LATEST EXAM CARD */}
+      <div className="px-4 mb-2">
         <div className="bg-white p-4 rounded-2xl shadow-sm border-l-[6px] border-indigo-500">
-          <h3 className="font-bold text-gray-800">{latest.exam_title}</h3>
-          <p className="text-xl font-black text-green-500">{latest.overall_score}%</p>
+          <h3 className="font-bold">{latest.exam_title}</h3>
+          <p>{latest.overall_score}%</p>
         </div>
       </div>
 
       {/* BREAKDOWN */}
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-3 bg-white rounded-2xl mx-4">
         <StatRow label="Theory" score={latest.theory_score} icon={<Code size={16} />} color="bg-red-50 text-red-500" />
         <StatRow label="Practical" score={latest.practical_score} icon={<Monitor size={16} />} color="bg-blue-50 text-blue-500" />
         <StatRow label="Logic" score={latest.problem_solving_score} icon={<Lightbulb size={16} />} color="bg-yellow-50 text-yellow-500" />
         <StatRow label="Creative" score={latest.creativity_score} icon={<Star size={16} />} color="bg-purple-50 text-purple-500" />
+      </div>
+
+      {/* FEEDBACK */}
+      <div className="p-4">
+        <div className="bg-indigo-600 p-5 rounded-2xl text-white">
+          {latest.tutor_feedback}
+        </div>
       </div>
 
     </div>
@@ -156,12 +176,12 @@ const StudentDashboard = () => {
 
 const StatRow = ({ label, score, icon, color }) => (
   <div>
-    <div className="flex justify-between text-xs font-bold">
-      <span>{label}</span>
-      <span>{score}%</span>
+    <div className="flex justify-between">
+      <span className="text-sm">{label}</span>
+      <span className="text-sm font-bold">{score}%</span>
     </div>
-    <div className="h-2 bg-gray-100 rounded">
-      <div className="h-full bg-green-500" style={{ width: `${score}%` }} />
+    <div className="h-2 bg-gray-200 rounded">
+      <div className="h-2 bg-green-500 rounded" style={{ width: `${score}%` }} />
     </div>
   </div>
 );
