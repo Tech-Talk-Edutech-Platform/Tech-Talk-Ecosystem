@@ -31,7 +31,7 @@ const StudentDashboard = () => {
       .from('student_results')
       .select('*')
       .eq('slug', slug)
-      .single();
+      // .single();
 
   }
 
