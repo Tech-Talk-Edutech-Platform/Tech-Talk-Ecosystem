@@ -45,31 +45,24 @@ const StudentDashboard = () => {
 
   const latest = data.find(d => d.id === selectedId) || data[0];
 
-  // 🔥 AVERAGES (NEW ADDITION)
+  // ✅ AVERAGES
   const avg = data.length
     ? {
         overall:
           data.reduce((sum, i) => sum + (i.overall_score || 0), 0) / data.length,
-
         theory:
           data.reduce((sum, i) => sum + (i.theory_score || 0), 0) / data.length,
-
         practical:
           data.reduce((sum, i) => sum + (i.practical_score || 0), 0) / data.length,
-
         logic:
           data.reduce((sum, i) => sum + (i.problem_solving_score || 0), 0) / data.length,
-
         creative:
           data.reduce((sum, i) => sum + (i.creativity_score || 0), 0) / data.length,
       }
     : null;
 
-  if (loading)
-    return <div className="p-10 text-center animate-pulse font-sans">Fetching Report Card...</div>;
-
-  if (!data.length)
-    return <div className="p-10 text-center font-sans">Result not found.</div>;
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
+  if (!data.length) return <div className="p-10 text-center">No results</div>;
 
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen pb-20 font-sans shadow-2xl">
@@ -77,7 +70,6 @@ const StudentDashboard = () => {
       {/* HEADER */}
       <div className="bg-white p-6 rounded-b-3xl shadow-sm border-b border-gray-100">
         <div className="flex items-center gap-4">
-
           <div className="w-20 h-20 bg-indigo-100 rounded-full overflow-hidden border-4 border-white shadow-inner flex items-center justify-center">
             {latest.avatar_url ? (
               <img src={latest.avatar_url} className="w-full h-full object-cover" />
@@ -87,31 +79,31 @@ const StudentDashboard = () => {
           </div>
 
           <div className="flex-1">
-            <h1 className="text-xl font-extrabold text-gray-800">{latest.student_name}</h1>
+            <h1 className="text-xl font-extrabold text-gray-800">
+              {latest.student_name}
+            </h1>
             <p className="text-sm text-indigo-600 font-semibold">
               Grade {latest.grade_level} • {latest.course_name}
             </p>
           </div>
-
         </div>
       </div>
 
       {/* PROJECT */}
       {latest.project_url && (
         <div className="p-4">
-          <div className="bg-gradient-to-br from-orange-500 to-pink-500 p-5 rounded-2xl shadow-lg text-white">
-            <div className="flex items-center gap-2 mb-2 font-bold uppercase text-xs tracking-widest">
+          <div className="bg-gradient-to-br from-orange-500 to-pink-500 p-5 rounded-2xl text-white">
+            <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase">
               <Rocket size={18} /> Student Project
             </div>
 
             <h3 className="text-lg font-black mb-3">
-              Latest submission by {latest.student_name.split(' ')[0]}
+              Latest Project
             </h3>
 
             <a
               href={latest.project_url}
               target="_blank"
-              rel="noreferrer"
               className="flex items-center justify-center gap-2 w-full bg-white text-orange-600 font-black py-3 rounded-xl"
             >
               Launch Project <ExternalLink size={18} />
@@ -122,34 +114,68 @@ const StudentDashboard = () => {
 
       {/* OVERALL */}
       <div className="p-4">
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50">
-          <h2 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wide px-1">
-            Overall Performance
-          </h2>
+        <div className="bg-white p-5 rounded-2xl shadow-sm border">
+          <h2 className="font-bold text-sm uppercase mb-4">Overall Performance</h2>
 
           <div className="flex items-center gap-6">
-            <div className="relative w-24 h-24 flex items-center justify-center border-[10px] border-green-500 rounded-full">
+            <div className="w-24 h-24 flex items-center justify-center border-[10px] border-green-500 rounded-full">
               <div className="text-center">
-                <span className="text-2xl font-black text-gray-800">
+                <span className="text-2xl font-black">
                   {latest.overall_score}%
                 </span>
-                <p className="text-[8px] text-green-500 font-bold uppercase">
-                  {latest.performance_label || 'Score'}
-                </p>
               </div>
             </div>
 
-            <p className="flex-1 text-sm text-gray-600 leading-tight">
-              <span className="font-bold text-gray-800">
-                {latest.performance_label || 'Great Job'}!
-              </span>{' '}
-              Latest exam performance snapshot
+            <p className="text-sm text-gray-600">
+              Latest exam snapshot
             </p>
           </div>
         </div>
       </div>
 
-      {/* EXAMS LIST */}
+      {/* ✅ NEW: BEAUTIFUL AVERAGE SUMMARY (NO UI BREAK) */}
+      <div className="p-4">
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-5 rounded-2xl shadow-lg">
+
+          <h2 className="text-sm uppercase font-bold mb-3">
+            Average Performance
+          </h2>
+
+          <div className="grid grid-cols-2 gap-3 text-xs">
+
+            <div className="bg-white/20 p-3 rounded-xl">
+              Overall Avg
+              <div className="text-xl font-black">
+                {avg?.overall.toFixed(1)}%
+              </div>
+            </div>
+
+            <div className="bg-white/20 p-3 rounded-xl">
+              Theory
+              <div className="text-xl font-black">
+                {avg?.theory.toFixed(1)}%
+              </div>
+            </div>
+
+            <div className="bg-white/20 p-3 rounded-xl">
+              Practical
+              <div className="text-xl font-black">
+                {avg?.practical.toFixed(1)}%
+              </div>
+            </div>
+
+            <div className="bg-white/20 p-3 rounded-xl">
+              Logic
+              <div className="text-xl font-black">
+                {avg?.logic.toFixed(1)}%
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* EXAMS */}
       <div className="px-4 mb-2">
         {data.map((item) => (
           <div
@@ -159,72 +185,45 @@ const StudentDashboard = () => {
               selectedId === item.id ? "ring-2 ring-indigo-400" : ""
             }`}
           >
-            <div className="flex justify-between items-start">
-              <div className="flex gap-3">
-                <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600">
-                  <BookOpen size={20} />
-                </div>
+            <div className="flex justify-between">
 
-                <div>
-                  <h3 className="font-bold text-gray-800 text-sm leading-tight">
-                    {item.exam_title}
-                  </h3>
-
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    Score: {item.overall_score}%
-                  </p>
-                </div>
+              <div>
+                <h3 className="font-bold text-sm">{item.exam_title}</h3>
+                <p className="text-xs text-gray-400">
+                  Click to view
+                </p>
               </div>
 
-              <div className="text-right">
-                <div className="text-xl font-black text-green-500">
-                  {item.overall_score}%
-                </div>
+              <div className="font-black text-green-500">
+                {item.overall_score}%
               </div>
+
             </div>
           </div>
         ))}
       </div>
 
-      {/* 🔥 AVERAGE SUMMARY (NEW BLOCK) */}
-      <div className="p-4">
-        <h2 className="font-bold text-gray-800 mb-3 text-sm px-1 uppercase tracking-wide">
-          Average Summary
-        </h2>
-
-        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 space-y-2 text-sm text-gray-700">
-
-          <p><b>Overall Average:</b> {avg?.overall.toFixed(1)}%</p>
-          <p><b>Theory Avg:</b> {avg?.theory.toFixed(1)}%</p>
-          <p><b>Practical Avg:</b> {avg?.practical.toFixed(1)}%</p>
-          <p><b>Logic Avg:</b> {avg?.logic.toFixed(1)}%</p>
-          <p><b>Creative Avg:</b> {avg?.creative.toFixed(1)}%</p>
-
-        </div>
-      </div>
-
       {/* BREAKDOWN */}
       <div className="p-4">
-        <h2 className="font-bold text-gray-800 mb-3 text-sm px-1 uppercase tracking-wide">
+        <h2 className="font-bold text-sm uppercase mb-3">
           Section Breakdown
         </h2>
 
-        <div className="space-y-4 bg-white p-5 rounded-2xl border border-gray-50 shadow-sm">
-          <StatRow label="Theory" score={latest.theory_score} icon={<Code size={16} />} color="bg-red-50 text-red-500" />
-          <StatRow label="Practical" score={latest.practical_score} icon={<Monitor size={16} />} color="bg-blue-50 text-blue-500" />
-          <StatRow label="Logic" score={latest.problem_solving_score} icon={<Lightbulb size={16} />} color="bg-yellow-50 text-yellow-500" />
-          <StatRow label="Creative" score={latest.creativity_score} icon={<Star size={16} />} color="bg-purple-50 text-purple-500" />
+        <div className="space-y-4 bg-white p-5 rounded-2xl border">
+          <StatRow label="Theory" score={latest.theory_score} icon={<Code size={16} />} />
+          <StatRow label="Practical" score={latest.practical_score} icon={<Monitor size={16} />} />
+          <StatRow label="Logic" score={latest.problem_solving_score} icon={<Lightbulb size={16} />} />
+          <StatRow label="Creative" score={latest.creativity_score} icon={<Star size={16} />} />
         </div>
       </div>
 
       {/* FEEDBACK */}
       <div className="px-4">
-        <div className="bg-indigo-600 p-5 rounded-2xl shadow-lg">
-          <div className="flex gap-2 items-center text-white font-bold mb-2 text-sm uppercase">
-            <MessageSquare size={18} /> Tutor Feedback
-          </div>
-
-          <p className="text-sm text-indigo-50 italic leading-relaxed font-medium">
+        <div className="bg-indigo-600 p-5 rounded-2xl text-white">
+          <h2 className="text-sm font-bold uppercase mb-2">
+            Tutor Feedback
+          </h2>
+          <p className="text-sm italic">
             "{latest.tutor_feedback}"
           </p>
         </div>
@@ -234,20 +233,21 @@ const StudentDashboard = () => {
   );
 };
 
-const StatRow = ({ label, score, icon, color }) => (
+const StatRow = ({ label, score, icon }) => (
   <div>
-    <div className="flex justify-between items-center mb-1">
+    <div className="flex justify-between mb-1">
       <div className="flex items-center gap-2">
-        <div className={`${color} p-1.5 rounded-lg`}>{icon}</div>
-        <span className="text-xs font-bold text-gray-600 uppercase tracking-tighter">
-          {label}
-        </span>
+        {icon}
+        <span className="text-xs font-bold uppercase">{label}</span>
       </div>
-      <div className="text-xs font-black text-gray-800">{score}%</div>
+      <div className="text-xs font-black">{score}%</div>
     </div>
 
-    <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-      <div className="bg-green-500 h-full rounded-full" style={{ width: `${score}%` }} />
+    <div className="w-full bg-gray-100 h-2 rounded-full">
+      <div
+        className="bg-green-500 h-full"
+        style={{ width: `${score}%` }}
+      />
     </div>
   </div>
 );
