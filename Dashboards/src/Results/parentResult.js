@@ -161,9 +161,7 @@ const StudentDashboard = () => {
                     {item.exam_title}
                   </h3>
 
-                  // <p className="text-[10px] text-gray-400 mt-1">
-                  //   Score: {item.overall_score}%
-                  // </p>
+                 
             <p className="text-[10px] text-gray-400 mt-1">
   {item.created_at ? new Date(item.created_at).toDateString() : ''} • {item.overall_score}%
 </p>
