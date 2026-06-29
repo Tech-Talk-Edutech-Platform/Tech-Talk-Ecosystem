@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+/* 1. Define base variables in the layer base */
+@layer base {
+  :root {
+    --background: 0 0% 96%; /* #F5F5F5 */
+    --foreground: 0 0% 20%; /* #333333 */
+    
+    /* Branding Design Tokens */
+    --primary: 231 62% 43%;    /* Royal Blue (#3F51B5) */
+    --secondary: 341 100% 64%;  /* Hot Pink (#FF4081) */
+    --accent: 174 100% 37%;     /* Emerald Teal (#00BFA5) */
+    --fun-pop: 51 100% 59%;     /* Sunny Yellow (#FFEB3B) */
+    
+    --border: 214 32% 91%;
+  }
+}
+
+/* 2. Map variables to Tailwind utilities via @theme */
+@theme {
+  --font-poppins: "Poppins", sans-serif;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-secondary: hsl(var(--secondary));
+  --color-accent: hsl(var(--accent));
+  --color-fun-pop: hsl(var(--fun-pop));
+  --color-border: hsl(var(--border));
+
+  /* Custom Gradients */
+  --background-image-hero-gradient: linear-gradient(to bottom right, var(--color-primary), var(--color-secondary), var(--color-accent));
+
+  /* Animations */
+  --animate-smooth-pulse: smoothPulse 3s ease-in-out infinite;
+  
+  @keyframes smoothPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.9; }
+  }
+
+  /* Shadows & Radius */
+  --radius-xl: 1rem;
+  --shadow-card: 0 10px 20px rgba(0,0,0,0.1);
+  --shadow-btn: 0 4px 6px rgba(0,0,0,0.1);
+}

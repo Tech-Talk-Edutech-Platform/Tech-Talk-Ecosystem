@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed React App</title>
+    <!-- Tailwind (Warning is normal for development) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- REACT & DOM (Note the specific version paths) -->
+    <script crossorigin src="https://esm.sh"></script>
+    <script crossorigin src="https://esm.sh"></script>
+    
+    <!-- SUPABASE (Since your other error mentioned it) -->
+    <script crossorigin src="https://esm.sh"></script>
+
+    <!-- BABEL (For JSX) -->
+    <script crossorigin src="https://esm.sh"></script>
+
+    <script type="text/babel">
+        // Access React/ReactDOM/Supabase from global scope
+        const { createClient } = supabase; 
+
+        const App = () => (
+            <div className="p-10 text-center">
+                <h1 className="text-3xl font-bold text-green-600">React is Connected!</h1>
+                <p className="text-gray-500">CORS/MIME errors should be gone.</p>
+            </div>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

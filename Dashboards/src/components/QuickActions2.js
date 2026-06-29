@@ -14,12 +14,12 @@ import { supabase } from "../supabase";
 import toast from "react-hot-toast";
 
 // Component Imports
-import UserManagement from "./UserManagement";
-import StudentAssignmentManager from "./StudentAssignmentManager";
-import StudentAssignments from "./StudentAssignments";
+import UserManagement from "../features/accounts/UserManagement";
+import StudentAssignmentManager from "../features/accounts/StudentAssignmentManager";
+import StudentAssignments from "../features/assessments/assignment/StudentAssignments";
 import AdminNotesManager from "./AdminNotesManager";
 import Sales from "./Sales";
-import MyHomework from "./MyHomework";
+import MyHomework from "../features/assessments/assignment//MyHomework";
 
 // ===== MAIN COMPONENT =====
 // ADDED: courseId to props to fix the ReferenceError
@@ -138,7 +138,7 @@ export default function QuickActions2({ userId, role, courseId }) {
     }
 
     // NAVIGATION LOGIC FOR NOTES
-    if (label === "Class Notes" || label === "Notes") {
+    // if (label === "Class Notes" || label === "Notes") {
       // If we are a tutor or admin, we might not have a specific courseId assigned to US, 
       // but for students, this is mandatory.
       // if (courseId) {
@@ -158,8 +158,7 @@ export default function QuickActions2({ userId, role, courseId }) {
         toast.error("No course assigned to this account.");
         return;
       }
-    }
-
+    
   };
 
   const handleSelectStudent = async (studentId) => {
