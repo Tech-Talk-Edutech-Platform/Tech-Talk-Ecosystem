@@ -1,534 +1,1648 @@
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../../../supabase";
-import { useParams } from "react-router-dom";
+import { Clock, Flag, CheckCircle, ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
+import toast from "react-hot-toast";
 
-// const ContentRenderer = ({ q }) => {
-//   switch(q.type) {
-//     case 'code':
-//       return <pre className="bg-black text-green-400 p-4 rounded overflow-x-auto">{q.content}</pre>;
-//     case 'image':
-//       return <img src={q.media_url} alt="Question Graphic" className="rounded-lg shadow-sm" />;
-//     default:
-//       return <p className="text-lg text-gray-800">{q.content}</p>;
-//   }
-// };
 export default function ExamPage({ user }) {
-    const { id } = useParams(); // ✅ Correct: Inside the component
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    const [exam, setExam] = useState(null);
-    const [questions, setQuestions] = useState([]);
-    const [attempt, setAttempt] = useState(null);
-    const [answers, setAnswers] = useState({});
-    const [timeLeft, setTimeLeft] = useState(0);
-    const [loading, setLoading] = useState(true);
+  // Core Data States
+  const [exam, setExam] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [attempt, setAttempt] = useState(null);
+  
+  // UI Engine States
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [answers, setAnswers] = useState({}); 
+  const [flags, setFlags] = useState({}); 
+  
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(false);
 
-    // 1. Load Exam and Questions first
-    useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
+  // 1. Core Fetcher Framework
+  useEffect(() => {
+    let isMounted = true;
 
-            // Fetch Exam
-            const { data: examData } = await supabase
-                .from("exams")
-                .select("*")
-                .eq("id", id)
-                .single();
+    const fetchExamAndInitialize = async () => {
+      try {
+        if (!isMounted) return;
+        setLoading(true);
 
-            if (examData) {
-                setExam(examData);
-                setTimeLeft(examData.duration_minutes * 60);
+        // Fetch Exam Configuration
+        const { data: examData, error: examErr } = await supabase
+          .from("exams")
+          .select("*")
+          .eq("id", id)
+          .single();
 
-                // Fetch Questions
-                const { data: qData } = await supabase
-                    .from("questions")
-                    .select("*")
-                    .eq("exam_id", examData.id);
+        if (examErr || !examData) throw new Error("Exam context could not be located.");
+        
+        if (!isMounted) return;
+        setExam(examData);
+        setTimeLeft(examData.duration_minutes * 60);
 
-                setQuestions(qData || []);
+        // Fetch Targeted Questions
+        const { data: qData, error: qErr } = await supabase
+          .from("questions")
+          .select("*")
+          .eq("exam_id", examData.id);
 
-                // 2. Start/Initialize Attempt
-                const { data: attemptData } = await supabase
-                    .from("attempts")
-                    .insert({
-                        exam_id: examData.id,
-                        student_id: user?.id,
-                        start_time: new Date()
-                    })
-                    .select()
-                    .single();
+        if (qErr) throw qErr;
+        
+        const fetchedQuestions = qData || [];
+        if (!isMounted) return;
+        setQuestions(fetchedQuestions);
 
-                setAttempt(attemptData);
-            }
-            setLoading(false);
-        };
+        // CRITICAL STOP: Short-circuit completely if no questions exist
+        if (fetchedQuestions.length === 0) {
+          setIsEmpty(true);
+          setLoading(false);
+          return; 
+        }
 
-        if (id && user) fetchData();
-    }, [id, user]);
+        // Initialize or Retrieve Active Session Attempt
+        const { data: attemptData, error: attemptErr } = await supabase
+          .from("attempts")
+          .select("*")
+          .eq("exam_id", examData.id)
+          .eq("student_id", user?.id)
+          .is("end_time", null) 
+          .order("start_time", { ascending: false })
+          .limit(1);
 
-    // 🧠 Submit Function (defined with useCallback to avoid re-initialization issues)
-    const submitExam = useCallback(async () => {
-        if (!attempt) return;
+        if (attemptErr) throw attemptErr;
 
-        const { data: allAnswers } = await supabase
-            .from("answers")
-            .select("*")
-            .eq("attempt_id", attempt.id);
+        let activeAttempt = attemptData?.[0];
 
-        let score = 0;
-        allAnswers?.forEach(a => {
-            const q = questions.find(q => q.id === a.question_id);
-            if (q?.type === "mcq" && a.answer === q.correct_answer) {
-                score += q.marks;
-            }
-        });
-
-        await supabase
+        if (!activeAttempt) {
+          const { data: newAttempt, error: createErr } = await supabase
             .from("attempts")
-            .update({ score, end_time: new Date() })
-            .eq("id", attempt.id);
+            .insert({
+              exam_id: examData.id,
+              student_id: user?.id,
+              start_time: new Date().toISOString()
+            })
+            .select()
+            .single();
 
-        alert(`Exam submitted! Your score: ${score}`);
-    }, [attempt, questions]);
+          if (createErr) throw createErr;
+          activeAttempt = newAttempt;
+        } else {
+          const { data: savedAnswers, error: answersErr } = await supabase
+            .from("answers")
+            .select("question_id, answer")
+            .eq("attempt_id", activeAttempt.id);
 
-    // ⏱ Timer Logic
-    useEffect(() => {
-        if (!attempt || !exam) return;
+          if (!answersErr && savedAnswers) {
+            const recoveredAnswers = {};
+            savedAnswers.forEach(row => {
+              recoveredAnswers[row.question_id] = row.answer;
+            });
+            setAnswers(recoveredAnswers);
+          }
+        }
 
-        const interval = setInterval(() => {
-            const elapsed = (Date.now() - new Date(attempt.start_time)) / 1000;
-            const remaining = (exam.duration_minutes * 60) - elapsed;
-
-            setTimeLeft(Math.max(0, remaining));
-
-            if (remaining <= 0) {
-                clearInterval(interval);
-                submitExam();
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [attempt, exam, submitExam]);
-
-    // 💾 Save answer
-    const saveAnswer = async (qId, value) => {
-        if (!attempt) return;
-        setAnswers(prev => ({ ...prev, [qId]: value }));
-
-        await supabase.from("answers").upsert({
-            attempt_id: attempt.id,
-            question_id: qId,
-            answer: value
-        });
+        if (isMounted) {
+          setAttempt(activeAttempt);
+          setLoading(false); 
+        }
+      } catch (err) {
+        console.error(err);
+        if (isMounted) {
+          toast.error(err.message || "Initialization error occurred.");
+          setLoading(false);
+        }
+      }
     };
 
-    if (loading) return <div className="p-10">Loading Exam Content...</div>;
-    if (!exam) return <div className="p-10">Exam not found.</div>;
+    if (id && user) {
+      fetchExamAndInitialize();
+    }
 
-    return (
-        <div className="p-6 max-w-4xl mx-auto">
-            <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full font-mono shadow-lg">
-                ⏱ {Math.floor(timeLeft / 60)}:
-                {("0" + Math.floor(timeLeft % 60)).slice(-2)}
-            </div>
+    return () => {
+      isMounted = false;
+    };
+  }, [id, user]);
 
-            <h1 className="text-3xl font-bold mb-2">{exam.title}</h1>
-            <p className="text-gray-600 mb-8">Total Questions: {questions.length}</p>
+  // 2. Evaluation Engine & Submission Handler
+  const submitExam = useCallback(async () => {
+    if (!attempt || isSubmitting) return;
+    setIsSubmitting(true);
 
-            {questions.map((q, index) => (
-                <div key={q.id} className="mb-8 p-6 bg-white border rounded-xl shadow-sm">
-                    <p className="text-lg font-medium mb-4">{index + 1}. {q.question}</p>
+    try {
+      const { data: databaseAnswers } = await supabase
+        .from("answers")
+        .select("*")
+        .eq("attempt_id", attempt.id);
 
-                    {q.type === "mcq" && q.options && (
-                        <div className="space-y-2">
-                            {q.options.map(opt => (
-                                <label key={opt} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name={q.id}
-                                        className="w-4 h-4 text-blue-600"
-                                        onChange={() => saveAnswer(q.id, opt)}
-                                    />
-                                    <span>{opt}</span>
-                                </label>
-                            ))}
-                        </div>
-                    )}
+      let computedScore = 0;
+      databaseAnswers?.forEach(savedAns => {
+        const matchingQuestion = questions.find(q => q.id === savedAns.question_id);
+        if (matchingQuestion?.type === "mcq" && savedAns.answer === matchingQuestion.correct_answer) {
+          computedScore += matchingQuestion.marks || 1;
+        }
+      });
 
-                    {(q.type === "short" || q.type === "debug") && (
-                        <textarea
-                            className="w-full border rounded-lg p-3 mt-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            rows="4"
-                            placeholder="Type your answer here..."
-                            onChange={e => saveAnswer(q.id, e.target.value)}
-                        />
-                    )}
-                </div>
-            ))}
+      const { error: updateError } = await supabase
+        .from("attempts")
+        .update({ 
+          score: computedScore, 
+          end_time: new Date().toISOString() 
+        })
+        .eq("id", attempt.id);
 
-            <button
-                onClick={submitExam}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors"
-            >
-                Finish and Submit Exam
-            </button>
+      if (updateError) throw updateError;
+
+      toast.success("Exam submitted safely!");
+      alert(`Exam complete! Your recorded score is: ${computedScore}`);
+      navigate(-1); 
+    } catch (err) {
+      toast.error(`Submission failed: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [attempt, questions, isSubmitting, navigate]);
+
+  // 3. Timer Heartbeat Hook
+  useEffect(() => {
+    if (!attempt || !exam || isSubmitting || questions.length === 0) return;
+
+    const interval = setInterval(() => {
+      const elapsedSeconds = (Date.now() - new Date(attempt.start_time).getTime()) / 1000;
+      const remainingTime = (exam.duration_minutes * 60) - elapsedSeconds;
+
+      setTimeLeft(Math.max(0, remainingTime));
+
+      if (remainingTime <= 0) {
+        clearInterval(interval);
+        toast.error("Time is up! Submitting answers immediately...", { duration: 5000 });
+        submitExam();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [attempt, exam, submitExam, isSubmitting, questions.length]);
+
+  // 4. Persistence Mutator for Database State Upserts
+  const saveAnswerToDB = async (questionId, responseValue) => {
+    if (!attempt) return;
+    
+    setAnswers(prev => ({ ...prev, [questionId]: responseValue }));
+
+    const { error } = await supabase
+      .from("answers")
+      .upsert({
+        attempt_id: attempt.id,
+        question_id: questionId,
+        answer: responseValue
+      }, { onConflict: "attempt_id,question_id" });
+
+    if (error) {
+      console.error("Answer failed to sync: ", error);
+      toast.error("Network sync lag detected.");
+    }
+  };
+
+  const toggleFlag = (qId) => setFlags(prev => ({ ...prev, [qId]: !prev[qId] }));
+
+  // Absolute fallback layer handling empty DB configurations cleanly (Checked FIRST)
+  if (isEmpty || (!loading && questions.length === 0)) return (
+    <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-4">
+      <AlertTriangle className="text-amber-500" size={48} />
+      <div className="text-center">
+        <p className="font-black text-slate-800 text-lg">Exam Is Empty</p>
+        <p className="text-slate-400 text-sm font-medium max-w-xs mt-1">This assessment doesn't contain any questions yet. Please contact your administrator.</p>
+      </div>
+      <button onClick={() => navigate(-1)} className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition">
+        Go Back
+      </button>
+    </div>
+  );
+
+  // Loading Screen Fallback Barrier
+  if (loading) return (
+    <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-3">
+      <Loader2 className="animate-spin text-indigo-600" size={36} />
+      <span className="text-sm text-slate-500 font-bold">Synchronizing assessment nodes...</span>
+    </div>
+  );
+
+  // Extra guard check in case configuration records are missing altogether
+  if (!exam) return (
+    <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-4">
+      <AlertTriangle className="text-amber-500" size={48} />
+      <div className="text-center">
+        <p className="font-black text-slate-800 text-lg">Configuration Error</p>
+        <p className="text-slate-400 text-sm font-medium max-w-xs mt-1">Failed to gather exam details.</p>
+      </div>
+    </div>
+  );
+
+  const currentQuestion = questions[currentIdx] || {};
+
+  return (
+    <div className="flex h-screen bg-slate-50">
+      {/* ===== SIDEBAR COMPONENT MATRIX ===== */}
+      <aside className="w-80 bg-white border-r border-slate-100 p-6 flex flex-col justify-between overflow-y-auto">
+        <div>
+          <button 
+            onClick={() => { if(confirm("Abandon exam? Progress saves but timer keeps running!")) navigate(-1); }} 
+            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 font-bold text-xs uppercase"
+          >
+            <ArrowLeft size={14} /> Exit Room
+          </button>
+          
+          <h3 className="font-black text-slate-900 text-xs tracking-wider uppercase mb-4">Navigation Tree</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {questions.map((q, idx) => {
+              const isFlagged = flags[q.id];
+              const isAnswered = answers[q.id] !== undefined && answers[q.id] !== "";
+              const isCurrent = idx === currentIdx;
+
+              return (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentIdx(idx)}
+                  className={`h-11 w-11 rounded-xl border text-sm font-black transition active:scale-95 flex items-center justify-center ${
+                    isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2' : ''
+                  } ${
+                    isFlagged ? 'bg-amber-400 border-amber-500 text-white shadow-sm' :
+                    isAnswered ? 'bg-emerald-500 border-emerald-600 text-white' : 
+                    'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
+          </div>
         </div>
-    );
+
+        <div className="bg-slate-50 p-4 rounded-2xl space-y-2 mt-6 text-[11px] font-bold text-slate-500">
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-emerald-500"/> Saved Response</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-amber-400"/> Flagged For Review</div>
+          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-slate-50 border"/> Not Attempted</div>
+        </div>
+      </aside>
+
+      {/* ===== MAIN WORKSPACE ===== */}
+      <main className="flex-1 flex flex-col">
+        {/* Header Block */}
+        <header className="bg-white px-8 py-5 border-b border-slate-100 flex justify-between items-center shadow-sm">
+          <div>
+            <h1 className="font-black text-slate-900 text-lg tracking-tight">{exam.title}</h1>
+            <p className="text-slate-400 text-xs font-bold">Targeted Assessment Sandbox</p>
+          </div>
+
+          <div className={`flex items-center gap-2 px-5 py-2 rounded-2xl font-mono font-black text-sm shadow-sm border transition-all ${
+            timeLeft < 120 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-slate-900 text-white border-transparent'
+          }`}>
+            <Clock size={16} />
+            {Math.floor(timeLeft / 60)}:{("0" + Math.floor(timeLeft % 60)).slice(-2)}
+          </div>
+        </header>
+
+        {/* Interactive Workspace Area */}
+        <section className="flex-1 p-8 overflow-y-auto max-w-4xl w-full mx-auto">
+          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+            <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black tracking-widest uppercase">
+              Question {currentIdx + 1} of {questions.length} ({currentQuestion.marks || 1} Marks)
+            </span>
+            <h2 className="text-xl text-slate-800 font-bold mt-4 mb-8 leading-relaxed">
+              {currentQuestion.question}
+            </h2>
+
+            {/* MCQ Input Mode */}
+            {currentQuestion.type === "mcq" && currentQuestion.options && (
+              <div className="space-y-3">
+                {currentQuestion.options.map((opt) => {
+                  const isChecked = answers[currentQuestion.id] === opt;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => saveAnswerToDB(currentQuestion.id, opt)}
+                      className={`block w-full text-left p-4 border-2 rounded-2xl font-medium text-sm transition-all active:scale-[0.99] ${
+                        isChecked 
+                          ? 'bg-indigo-50/50 border-indigo-600 text-indigo-900 font-bold' 
+                          : 'border-slate-100 text-slate-600 hover:bg-slate-50/80'
+                      }`}
+                    >
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Open Form Inputs */}
+            {(currentQuestion.type === "short" || currentQuestion.type === "debug") && (
+              <textarea
+                className="w-full border-2 border-slate-100 bg-slate-50/50 p-5 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 text-sm placeholder:text-slate-300 shadow-inner"
+                rows={6}
+                value={answers[currentQuestion.id] || ""}
+                placeholder="Type your formal code snippet or textual response evaluation here..."
+                onChange={e => saveAnswerToDB(currentQuestion.id, e.target.value)}
+              />
+            )}
+          </div>
+        </section>
+
+        {/* Action Bottom Control Navigation Bar */}
+        <footer className="px-8 py-5 bg-white border-t border-slate-100 flex justify-between items-center shadow-lg">
+          <button 
+            onClick={() => toggleFlag(currentQuestion.id)} 
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${
+              flags[currentQuestion.id] ? 'bg-amber-400 text-white' : 'text-amber-500 hover:bg-amber-50'
+            }`}
+          >
+            <Flag size={16} className={flags[currentQuestion.id] ? "fill-white" : ""} /> Flag for Review
+          </button>
+
+          <div className="flex gap-3">
+            <button 
+              disabled={currentIdx === 0}
+              onClick={() => setCurrentIdx(p => p - 1)} 
+              className="px-5 py-2.5 border border-slate-200 text-slate-600 font-black text-xs rounded-xl disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider"
+            >
+              Previous
+            </button>
+            
+            {currentIdx < questions.length - 1 ? (
+              <button 
+                onClick={() => setCurrentIdx(p => p + 1)} 
+                className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl uppercase tracking-wider"
+              >
+                Next
+              </button>
+            ) : (
+              <button 
+                disabled={isSubmitting}
+                onClick={() => { if(confirm("Are you sure you want to finish and submit?")) submitExam(); }} 
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl flex items-center gap-2 uppercase tracking-wider shadow-md"
+              >
+                {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Submit Exam
+              </button>
+            )}
+          </div>
+        </footer>
+      </main>
+    </div>
+  );
 }
-// import { useEffect, useState } from "react";
-// import { supabase } from "../../supabase";
-// import { useParams } from "react-router-dom";
+// import React, { useEffect, useState, useCallback } from "react";
+// import { useParams, useNavigate } from "react-router-dom";
+// import { supabase } from "../../../supabase";
+// import { Clock, Flag, CheckCircle, ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
+// import toast from "react-hot-toast";
 
 // export default function ExamPage({ user }) {
-//     const { id } = useParams(); // ✅ inside component
+//   const { id } = useParams();
+//   const navigate = useNavigate();
 
-//     const [exam, setExam] = useState(null);
-//     const [questions, setQuestions] = useState([]);
-//     const [attempt, setAttempt] = useState(null);
-//     const [answers, setAnswers] = useState({});
-//     const [timeLeft, setTimeLeft] = useState(0);
+//   // Core Data States
+//   const [exam, setExam] = useState(null);
+//   const [questions, setQuestions] = useState([]);
+//   const [attempt, setAttempt] = useState(null);
+  
+//   // UI Engine States
+//   const [currentIdx, setCurrentIdx] = useState(0);
+//   const [answers, setAnswers] = useState({}); 
+//   const [flags, setFlags] = useState({}); 
+  
+//   const [timeLeft, setTimeLeft] = useState(0);
+//   const [loading, setLoading] = useState(true);
+//   const [isSubmitting, setIsSubmitting] = useState(false);
 
-//     // ✅ Load exam
-//     useEffect(() => {
-//         const loadExam = async () => {
-//             const { data } = await supabase
-//                 .from("exams")
-//                 .select("*")
-//                 .eq("id", id)
-//                 .single();
+//   // 1. Core Fetcher Framework
+//   useEffect(() => {
+//     const fetchExamAndInitialize = async () => {
+//       try {
+//         setLoading(true);
 
-//             if (data) {
-//                 setExam(data);
-//                 setTimeLeft(data.duration_minutes * 60);
-//             }
-//         };
+//         // Fetch Exam Configuration
+//         const { data: examData, error: examErr } = await supabase
+//           .from("exams")
+//           .select("*")
+//           .eq("id", id)
+//           .single();
 
-//         loadExam();
-//     }, [id]);
+//         if (examErr || !examData) throw new Error("Exam context could not be located.");
+//         setExam(examData);
+//         setTimeLeft(examData.duration_minutes * 60);
 
-//     // ✅ Load questions
-//     useEffect(() => {
-//         if (!exam) return;
+//         // Fetch Targeted Questions
+//         const { data: qData, error: qErr } = await supabase
+//           .from("questions")
+//           .select("*")
+//           .eq("exam_id", examData.id);
 
-//         const loadQuestions = async () => {
-//             const { data } = await supabase
-//                 .from("questions")
-//                 .select("*")
-//                 .eq("exam_id", exam.id);
+//         if (qErr) throw qErr;
+//         const fetchedQuestions = qData || [];
+//         setQuestions(fetchedQuestions);
 
-//             setQuestions(data || []);
-//         };
+//         // Escape attempt creation if no questions exist
+//         if (fetchedQuestions.length === 0) {
+//           setLoading(false);
+//           return;
+//         }
 
-//         loadQuestions();
-//     }, [exam]);
+//         // Initialize or Retrieve Active Session Attempt
+//         const { data: attemptData, error: attemptErr } = await supabase
+//           .from("attempts")
+//           .select("*")
+//           .eq("exam_id", examData.id)
+//           .eq("student_id", user?.id)
+//           .is("end_time", null) 
+//           .order("start_time", { ascending: false })
+//           .limit(1);
 
-//     // ✅ Start attempt
-//     useEffect(() => {
-//         if (!exam) return;
+//         let activeAttempt = attemptData?.[0];
 
-//         const start = async () => {
-//             const { data } = await supabase
-//                 .from("attempts")
-//                 .insert({
-//                     exam_id: exam.id,
-//                     student_id: user.id,
-//                     start_time: new Date()
-//                 })
-//                 .select()
-//                 .single();
-
-//             setAttempt(data);
-//         };
-
-//         start();
-//     }, [exam]);
-
-//     // ⏱ Timer
-//     useEffect(() => {
-//         if (!attempt || !exam) return;
-
-//         const interval = setInterval(() => {
-//             const elapsed =
-//                 (Date.now() - new Date(attempt.start_time)) / 1000;
-
-//             const remaining =
-//                 exam.duration_minutes * 60 - elapsed;
-
-//             setTimeLeft(Math.max(0, remaining));
-
-//             if (remaining <= 0) submitExam();
-//         }, 1000);
-
-//         return () => clearInterval(interval);
-//     }, [attempt, exam]);
-
-//     // 💾 Save answer
-//     const saveAnswer = async (qId, value) => {
-//         if (!attempt) return;
-
-//         setAnswers(prev => ({ ...prev, [qId]: value }));
-
-//         await supabase.from("answers").upsert({
-//             attempt_id: attempt.id,
-//             question_id: qId,
-//             answer: value
-//         });
-//     };
-
-//     // 🧠 Submit
-//     const submitExam = async () => {
-//         if (!attempt) return;
-
-//         const { data: allAnswers } = await supabase
-//             .from("answers")
-//             .select("*")
-//             .eq("attempt_id", attempt.id);
-
-//         let score = 0;
-
-//         allAnswers.forEach(a => {
-//             const q = questions.find(q => q.id === a.question_id);
-
-//             if (q?.type === "mcq" && a.answer === q.correct_answer) {
-//                 score += q.marks;
-//             }
-//         });
-
-//         await supabase
+//         if (!activeAttempt) {
+//           const { data: newAttempt, error: createErr } = await supabase
 //             .from("attempts")
-//             .update({
-//                 score,
-//                 end_time: new Date()
+//             .insert({
+//               exam_id: examData.id,
+//               student_id: user?.id,
+//               start_time: new Date().toISOString()
 //             })
-//             .eq("id", attempt.id);
+//             .select()
+//             .single();
 
-//         alert("Exam submitted!");
+//           if (createErr) throw createErr;
+//           activeAttempt = newAttempt;
+//         } else {
+//           const { data: savedAnswers } = await supabase
+//             .from("answers")
+//             .select("question_id, answer")
+//             .eq("attempt_id", activeAttempt.id);
+
+//           if (savedAnswers) {
+//             const recoveredAnswers = {};
+//             savedAnswers.forEach(row => {
+//               recoveredAnswers[row.question_id] = row.answer;
+//             });
+//             setAnswers(recoveredAnswers);
+//           }
+//         }
+
+//         setAttempt(activeAttempt);
+//       } catch (err) {
+//         toast.error(err.message || "Initialization error occurred.");
+//         console.error(err);
+//       } finally {
+//         setLoading(false);
+//       }
 //     };
 
-//     if (!exam) return <p>Loading exam...</p>;
+//     if (id && user) fetchExamAndInitialize();
+//   }, [id, user]);
 
-//     return (
-//         <div className="p-6">
-//             {/* ⏱ Timer */}
-//             <div className="fixed top-4 right-4 bg-black text-white px-4 py-2 rounded">
-//                 ⏱ {Math.floor(timeLeft / 60)}:
-//                 {("0" + (timeLeft % 60)).slice(-2)}
-//             </div>
+//   // 2. Evaluation Engine & Submission Handler
+//   const submitExam = useCallback(async () => {
+//     if (!attempt || isSubmitting) return;
+//     setIsSubmitting(true);
 
-//             <h1 className="text-xl font-bold mb-4">{exam.title}</h1>
+//     try {
+//       const { data: databaseAnswers } = await supabase
+//         .from("answers")
+//         .select("*")
+//         .eq("attempt_id", attempt.id);
 
-//             {questions.map(q => (
-//                 <div key={q.id} className="mb-6 p-4 border rounded">
-//                     <p className="font-semibold">{q.question}</p>
+//       let computedScore = 0;
+//       databaseAnswers?.forEach(savedAns => {
+//         const matchingQuestion = questions.find(q => q.id === savedAns.question_id);
+//         if (matchingQuestion?.type === "mcq" && savedAns.answer === matchingQuestion.correct_answer) {
+//           computedScore += matchingQuestion.marks || 1;
+//         }
+//       });
 
-//                     {q.type === "mcq" &&
-//                         q.options.map(opt => (
-//                             <label key={opt} className="block">
-//                                 <input
-//                                     type="radio"
-//                                     name={q.id}
-//                                     onChange={() => saveAnswer(q.id, opt)}
-//                                 />
-//                                 {opt}
-//                             </label>
-//                         ))}
+//       const { error: updateError } = await supabase
+//         .from("attempts")
+//         .update({ 
+//           score: computedScore, 
+//           end_time: new Date().toISOString() 
+//         })
+//         .eq("id", attempt.id);
 
-//                     {(q.type === "short" || q.type === "debug") && (
-//                         <textarea
-//                             className="w-full border p-2 mt-2"
-//                             onChange={e => saveAnswer(q.id, e.target.value)}
-//                         />
-//                     )}
+//       if (updateError) throw updateError;
 
-//                     {q.type === "practical" && (
-//                         <input
-//                             type="text"
-//                             placeholder="Paste Scratch project link"
-//                             className="w-full border p-2 mt-2"
-//                             onChange={e => saveAnswer(q.id, e.target.value)}
-//                         />
-//                     )}
-//                 </div>
-//             ))}
+//       toast.success("Exam submitted safely!");
+//       alert(`Exam complete! Your recorded score is: ${computedScore}`);
+//       navigate(-1); 
+//     } catch (err) {
+//       toast.error(`Submission failed: ${err.message}`);
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   }, [attempt, questions, isSubmitting, navigate]);
 
-//             <button
-//                 onClick={submitExam}
-//                 className="bg-blue-600 text-white px-6 py-2 rounded"
-//             >
-//                 Submit Exam
-//             </button>
+//   // 3. Timer Heartbeat Hook
+//   useEffect(() => {
+//     if (!attempt || !exam || isSubmitting || questions.length === 0) return;
+
+//     const interval = setInterval(() => {
+//       const elapsedSeconds = (Date.now() - new Date(attempt.start_time).getTime()) / 1000;
+//       const remainingTime = (exam.duration_minutes * 60) - elapsedSeconds;
+
+//       setTimeLeft(Math.max(0, remainingTime));
+
+//       if (remainingTime <= 0) {
+//         clearInterval(interval);
+//         toast.error("Time is up! Submitting answers immediately...", { duration: 5000 });
+//         submitExam();
+//       }
+//     }, 1000);
+
+//     return () => clearInterval(interval);
+//   }, [attempt, exam, submitExam, isSubmitting, questions.length]);
+
+//   // 4. Persistence Mutator for Database State Upserts
+//   const saveAnswerToDB = async (questionId, responseValue) => {
+//     if (!attempt) return;
+    
+//     setAnswers(prev => ({ ...prev, [questionId]: responseValue }));
+
+//     const { error } = await supabase
+//       .from("answers")
+//       .upsert({
+//         attempt_id: attempt.id,
+//         question_id: questionId,
+//         answer: responseValue
+//       }, { onConflict: "attempt_id,question_id" });
+
+//     if (error) {
+//       console.error("Answer failed to sync: ", error);
+//       toast.error("Network sync lag detected.");
+//     }
+//   };
+
+//   const toggleFlag = (qId) => setFlags(prev => ({ ...prev, [qId]: !prev[qId] }));
+
+//   if (loading) return (
+//     <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-3">
+//       <Loader2 className="animate-spin text-indigo-600" size={36} />
+//       <span className="text-sm text-slate-500 font-bold">Synchronizing assessment nodes...</span>
+//     </div>
+//   );
+
+//   // Robust protection framework against unconfigured exams or empty question banks
+//   if (!exam || questions.length === 0) return (
+//     <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-4">
+//       <AlertTriangle className="text-amber-500" size={48} />
+//       <div className="text-center">
+//         <p className="font-black text-slate-800 text-lg">Exam Is Empty</p>
+//         <p className="text-slate-400 text-sm font-medium max-w-xs mt-1">This assessment doesn't contain any questions yet. Please contact your administrator.</p>
+//       </div>
+//       <button onClick={() => navigate(-1)} className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition">
+//         Go Back
+//       </button>
+//     </div>
+//   );
+
+//   const currentQuestion = questions[currentIdx] || {};
+
+//   return (
+//     <div className="flex h-screen bg-slate-50">
+//       {/* ===== SIDEBAR COMPONENT MATRIX ===== */}
+//       <aside className="w-80 bg-white border-r border-slate-100 p-6 flex flex-col justify-between overflow-y-auto">
+//         <div>
+//           <button 
+//             onClick={() => { if(confirm("Abandon exam? Progress saves but timer keeps running!")) navigate(-1); }} 
+//             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 font-bold text-xs uppercase"
+//           >
+//             <ArrowLeft size={14} /> Exit Room
+//           </button>
+          
+//           <h3 className="font-black text-slate-900 text-xs tracking-wider uppercase mb-4">Navigation Tree</h3>
+//           <div className="grid grid-cols-4 gap-2">
+//             {questions.map((q, idx) => {
+//               const isFlagged = flags[q.id];
+//               const isAnswered = answers[q.id] !== undefined && answers[q.id] !== "";
+//               const isCurrent = idx === currentIdx;
+
+//               return (
+//                 <button
+//                   key={q.id}
+//                   onClick={() => setCurrentIdx(idx)}
+//                   className={`h-11 w-11 rounded-xl border text-sm font-black transition active:scale-95 flex items-center justify-center ${
+//                     isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2' : ''
+//                   } ${
+//                     isFlagged ? 'bg-amber-400 border-amber-500 text-white shadow-sm' :
+//                     isAnswered ? 'bg-emerald-500 border-emerald-600 text-white' : 
+//                     'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
+//                   }`}
+//                 >
+//                   {idx + 1}
+//                 </button>
+//               );
+//             })}
+//           </div>
 //         </div>
-//     );
+
+//         <div className="bg-slate-50 p-4 rounded-2xl space-y-2 mt-6 text-[11px] font-bold text-slate-500">
+//           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-emerald-500"/> Saved Response</div>
+//           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-amber-400"/> Flagged For Review</div>
+//           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-slate-50 border"/> Not Attempted</div>
+//         </div>
+//       </aside>
+
+//       {/* ===== MAIN WORKSPACE ===== */}
+//       <main className="flex-1 flex flex-col">
+//         {/* Header Block */}
+//         <header className="bg-white px-8 py-5 border-b border-slate-100 flex justify-between items-center shadow-sm">
+//           <div>
+//             <h1 className="font-black text-slate-900 text-lg tracking-tight">{exam.title}</h1>
+//             <p className="text-slate-400 text-xs font-bold">Targeted Assessment Sandbox</p>
+//           </div>
+
+//           <div className={`flex items-center gap-2 px-5 py-2 rounded-2xl font-mono font-black text-sm shadow-sm border transition-all ${
+//             timeLeft < 120 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-slate-900 text-white border-transparent'
+//           }`}>
+//             <Clock size={16} />
+//             {Math.floor(timeLeft / 60)}:{("0" + Math.floor(timeLeft % 60)).slice(-2)}
+//           </div>
+//         </header>
+
+//         {/* Interactive Workspace Area */}
+//         <section className="flex-1 p-8 overflow-y-auto max-w-4xl w-full mx-auto">
+//           <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+//             <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black tracking-widest uppercase">
+//               Question {currentIdx + 1} of {questions.length} ({currentQuestion.marks || 1} Marks)
+//             </span>
+//             <h2 className="text-xl text-slate-800 font-bold mt-4 mb-8 leading-relaxed">
+//               {currentQuestion.question}
+//             </h2>
+
+//             {/* MCQ Input Mode */}
+//             {currentQuestion.type === "mcq" && currentQuestion.options && (
+//               <div className="space-y-3">
+//                 {currentQuestion.options.map((opt) => {
+//                   const isChecked = answers[currentQuestion.id] === opt;
+//                   return (
+//                     <button
+//                       key={opt}
+//                       onClick={() => saveAnswerToDB(currentQuestion.id, opt)}
+//                       className={`block w-full text-left p-4 border-2 rounded-2xl font-medium text-sm transition-all active:scale-[0.99] ${
+//                         isChecked 
+//                           ? 'bg-indigo-50/50 border-indigo-600 text-indigo-900 font-bold' 
+//                           : 'border-slate-100 text-slate-600 hover:bg-slate-50/80'
+//                       }`}
+//                     >
+//                       {opt}
+//                     </button>
+//                   );
+//                 })}
+//               </div>
+//             )}
+
+//             {/* Open Form Inputs */}
+//             {(currentQuestion.type === "short" || currentQuestion.type === "debug") && (
+//               <textarea
+//                 className="w-full border-2 border-slate-100 bg-slate-50/50 p-5 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 text-sm placeholder:text-slate-300 shadow-inner"
+//                 rows={6}
+//                 value={answers[currentQuestion.id] || ""}
+//                 placeholder="Type your formal code snippet or textual response evaluation here..."
+//                 onChange={e => saveAnswerToDB(currentQuestion.id, e.target.value)}
+//               />
+//             )}
+//           </div>
+//         </section>
+
+//         {/* Action Bottom Control Navigation Bar */}
+//         <footer className="px-8 py-5 bg-white border-t border-slate-100 flex justify-between items-center shadow-lg">
+//           <button 
+//             onClick={() => toggleFlag(currentQuestion.id)} 
+//             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${
+//               flags[currentQuestion.id] ? 'bg-amber-400 text-white' : 'text-amber-500 hover:bg-amber-50'
+//             }`}
+//           >
+//             <Flag size={16} className={flags[currentQuestion.id] ? "fill-white" : ""} /> Flag for Review
+//           </button>
+
+//           <div className="flex gap-3">
+//             <button 
+//               disabled={currentIdx === 0}
+//               onClick={() => setCurrentIdx(p => p - 1)} 
+//               className="px-5 py-2.5 border border-slate-200 text-slate-600 font-black text-xs rounded-xl disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider"
+//             >
+//               Previous
+//             </button>
+            
+//             {currentIdx < questions.length - 1 ? (
+//               <button 
+//                 onClick={() => setCurrentIdx(p => p + 1)} 
+//                 className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl uppercase tracking-wider"
+//               >
+//                 Next
+//               </button>
+//             ) : (
+//               <button 
+//                 disabled={isSubmitting}
+//                 onClick={() => { if(confirm("Are you sure you want to finish and submit?")) submitExam(); }} 
+//                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl flex items-center gap-2 uppercase tracking-wider shadow-md"
+//               >
+//                 {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Submit Exam
+//               </button>
+//             )}
+//           </div>
+//         </footer>
+//       </main>
+//     </div>
+//   );
 // }
-// // import { useEffect, useState } from "react";
-// // import { supabase } from "../supabase";
-// // import { useParams } from "react-router-dom";
+// // import React, { useEffect, useState, useCallback } from "react";
+// // import { useParams, useNavigate } from "react-router-dom";
+// // import { supabase } from "../../../supabase";
+// // import { Clock, Flag, CheckCircle, ArrowLeft, Loader2, AlertTriangle } from "lucide-react";
+// // import toast from "react-hot-toast";
 
-// // const { id } = useParams();
+// // export default function ExamPage({ user }) {
+// //   const { id } = useParams();
+// //   const navigate = useNavigate();
 
-// // export default function ExamPage({ exam, user }) {
-// //     const [questions, setQuestions] = useState([]);
-// //     const [attempt, setAttempt] = useState(null);
-// //     const [answers, setAnswers] = useState({});
-// //     const [timeLeft, setTimeLeft] = useState(0);
-// //     const { data: exam } = await supabase
-// //         .from("exams")
-// //         .select("*")
-// //         .eq("id", id)
-// //         .single();
+// //   // Core Data States
+// //   const [exam, setExam] = useState(null);
+// //   const [questions, setQuestions] = useState([]);
+// //   const [attempt, setAttempt] = useState(null);
+  
+// //   // UI Engine States
+// //   const [currentIdx, setCurrentIdx] = useState(0);
+// //   const [answers, setAnswers] = useState({}); // Matches database format { [qId]: value }
+// //   const [flags, setFlags] = useState({}); // Local-only state for UI review markers { [qId]: true }
+  
+// //   const [timeLeft, setTimeLeft] = useState(0);
+// //   const [loading, setLoading] = useState(true);
+// //   const [isSubmitting, setIsSubmitting] = useState(false);
 
-// //     // 🚀 Start exam
-// //     useEffect(() => {
-// //         const start = async () => {
-// //             const { data } = await supabase
-// //                 .from("attempts")
-// //                 .insert({
-// //                     exam_id: exam.id,
-// //                     student_id: user.id,
-// //                     start_time: new Date()
-// //                 })
-// //                 .select()
-// //                 .single();
+// //   // 1. Core Fetcher Framework
+// //   useEffect(() => {
+// //     const fetchExamAndInitialize = async () => {
+// //       try {
+// //         setLoading(true);
 
-// //             setAttempt(data);
-// //             setTimeLeft(exam.duration_minutes * 60);
-// //         };
+// //         // Fetch Exam Configuration
+// //         const { data: examData, error: examErr } = await supabase
+// //           .from("exams")
+// //           .select("*")
+// //           .eq("id", id)
+// //           .single();
 
-// //         start();
-// //     }, []);
+// //         if (examErr || !examData) throw new Error("Exam not found.");
+// //         setExam(examData);
+// //         setTimeLeft(examData.duration_minutes * 60);
 
-// //     // ⏱ Timer
-// //     useEffect(() => {
-// //         if (!attempt) return;
+// //         // Fetch Targeted Questions
+// //         const { data: qData, error: qErr } = await supabase
+// //           .from("questions")
+// //           .select("*")
+// //           .eq("exam_id", examData.id);
 
-// //         const interval = setInterval(() => {
-// //             const elapsed =
-// //                 (Date.now() - new Date(attempt.start_time)) / 1000;
-// //             const remaining =
-// //                 exam.duration_minutes * 60 - elapsed;
+// //         if (qErr) throw qErr;
+// //         const fetchedQuestions = qData || [];
+// //         setQuestions(fetchedQuestions);
 
-// //             setTimeLeft(Math.max(0, remaining));
+// //         // Initialize or Retrieve Active Session Attempt
+// //         const { data: attemptData, error: attemptErr } = await supabase
+// //           .from("attempts")
+// //           .select("*")
+// //           .eq("exam_id", examData.id)
+// //           .eq("student_id", user?.id)
+// //           .is("end_time", null) // Fetch existing unfinished attempt if crash occurs
+// //           .order("start_time", { ascending: false })
+// //           .limit(1);
 
-// //             if (remaining <= 0) submitExam();
-// //         }, 1000);
+// //         let activeAttempt = attemptData?.[0];
 
-// //         return () => clearInterval(interval);
-// //     }, [attempt]);
-
-// //     // 📥 Load questions
-// //     useEffect(() => {
-// //         const load = async () => {
-// //             const { data } = await supabase
-// //                 .from("questions")
-// //                 .select("*")
-// //                 .eq("exam_id", exam.id);
-
-// //             setQuestions(data);
-// //         };
-
-// //         load();
-// //     }, []);
-
-// //     // 💾 Save answer
-// //     const saveAnswer = async (qId, value) => {
-// //         setAnswers(prev => ({ ...prev, [qId]: value }));
-
-// //         await supabase.from("answers").upsert({
-// //             attempt_id: attempt.id,
-// //             question_id: qId,
-// //             answer: value
-// //         });
-// //     };
-
-// //     // 🧠 Submit
-// //     const submitExam = async () => {
-// //         const { data: allAnswers } = await supabase
-// //             .from("answers")
-// //             .select("*")
-// //             .eq("attempt_id", attempt.id);
-
-// //         const { data: qs } = await supabase
-// //             .from("questions")
-// //             .select("*")
-// //             .eq("exam_id", exam.id);
-
-// //         let score = 0;
-
-// //         allAnswers.forEach(a => {
-// //             const q = qs.find(q => q.id === a.question_id);
-
-// //             if (q.type === "mcq" && a.answer === q.correct_answer) {
-// //                 score += q.marks;
-// //             }
-// //         });
-
-// //         await supabase
+// //         if (!activeAttempt) {
+// //           const { data: newAttempt, error: createErr } = await supabase
 // //             .from("attempts")
-// //             .update({
-// //                 score,
-// //                 end_time: new Date()
+// //             .insert({
+// //               exam_id: examData.id,
+// //               student_id: user?.id,
+// //               start_time: new Date().toISOString()
 // //             })
-// //             .eq("id", attempt.id);
+// //             .select()
+// //             .single();
 
-// //         alert("Exam submitted!");
+// //           if (createErr) throw createErr;
+// //           activeAttempt = newAttempt;
+// //         } else {
+// //           // If pulling an active old crash state, recover previous answers recorded in DB
+// //           const { data: savedAnswers } = await supabase
+// //             .from("answers")
+// //             .select("question_id, answer")
+// //             .eq("attempt_id", activeAttempt.id);
+
+// //           if (savedAnswers) {
+// //             const recoveredAnswers = {};
+// //             savedAnswers.forEach(row => {
+// //               recoveredAnswers[row.question_id] = row.answer;
+// //             });
+// //             setAnswers(recoveredAnswers);
+// //           }
+// //         }
+
+// //         setAttempt(activeAttempt);
+// //       } catch (err) {
+// //         toast.error(err.message || "Initialization error occurred.");
+// //         console.error(err);
+// //       } finally {
+// //         setLoading(false);
+// //       }
 // //     };
 
-// //     return (
-// //         <div className="p-6">
-// //             {/* ⏱ Timer */}
-// //             <div className="fixed top-4 right-4 bg-black text-white px-4 py-2 rounded">
-// //                 ⏱ {Math.floor(timeLeft / 60)}:
-// //                 {("0" + (timeLeft % 60)).slice(-2)}
-// //             </div>
+// //     if (id && user) fetchExamAndInitialize();
+// //   }, [id, user]);
 
-// //             <h1 className="text-xl font-bold mb-4">{exam.title}</h1>
+// //   // 2. Evaluation Engine & Submission Handler
+// //   const submitExam = useCallback(async () => {
+// //     if (!attempt || isSubmitting) return;
+// //     setIsSubmitting(true);
 
-// //             {questions.map(q => (
-// //                 <div key={q.id} className="mb-6 p-4 border rounded">
-// //                     <p className="font-semibold">{q.question}</p>
+// //     try {
+// //       // Gather runtime answers right from target schema table
+// //       const { data: databaseAnswers } = await supabase
+// //         .from("answers")
+// //         .select("*")
+// //         .eq("attempt_id", attempt.id);
 
-// //                     {/* MCQ */}
-// //                     {q.type === "mcq" &&
-// //                         q.options.map(opt => (
-// //                             <label key={opt} className="block">
-// //                                 <input
-// //                                     type="radio"
-// //                                     name={q.id}
-// //                                     onChange={() => saveAnswer(q.id, opt)}
-// //                                 />
-// //                                 {opt}
-// //                             </label>
-// //                         ))}
+// //       let computedScore = 0;
+// //       databaseAnswers?.forEach(savedAns => {
+// //         const matchingQuestion = questions.find(q => q.id === savedAns.question_id);
+// //         if (matchingQuestion?.type === "mcq" && savedAns.answer === matchingQuestion.correct_answer) {
+// //           computedScore += matchingQuestion.marks || 1;
+// //         }
+// //       });
 
-// //                     {/* Short / Debug */}
-// //                     {(q.type === "short" || q.type === "debug") && (
-// //                         <textarea
-// //                             className="w-full border p-2 mt-2"
-// //                             onChange={e =>
-// //                                 saveAnswer(q.id, e.target.value)
-// //                             }
-// //                         />
-// //                     )}
+// //       // Complete attempt transaction
+// //       const { error: updateError } = await supabase
+// //         .from("attempts")
+// //         .update({ 
+// //           score: computedScore, 
+// //           end_time: new Date().toISOString() 
+// //         })
+// //         .eq("id", attempt.id);
 
-// //                     {/* Practical */}
-// //                     {q.type === "practical" && (
-// //                         <input
-// //                             type="text"
-// //                             placeholder="Paste Scratch project link"
-// //                             className="w-full border p-2 mt-2"
-// //                             onChange={e =>
-// //                                 saveAnswer(q.id, e.target.value)
-// //                             }
-// //                         />
-// //                     )}
-// //                 </div>
-// //             ))}
+// //       if (updateError) throw updateError;
 
-// //             <button
-// //                 onClick={submitExam}
-// //                 className="bg-blue-600 text-white px-6 py-2 rounded"
-// //             >
-// //                 Submit Exam
-// //             </button>
+// //       toast.success("Exam submitted safely!");
+// //       alert(`Exam complete! Your recorded score is: ${computedScore}`);
+// //       navigate(-1); // Safely push layout engine back out to dashboard matrix
+// //     } catch (err) {
+// //       toast.error(`Submission failed: ${err.message}`);
+// //     } finally {
+// //       setIsSubmitting(null);
+// //     }
+// //   }, [attempt, questions, isSubmitting, navigate]);
+
+// //   // 3. Timer Heartbeat Hook
+// //   useEffect(() => {
+// //     if (!attempt || !exam || isSubmitting) return;
+
+// //     const interval = setInterval(() => {
+// //       const elapsedSeconds = (Date.now() - new Date(attempt.start_time).getTime()) / 1000;
+// //       const remainingTime = (exam.duration_minutes * 60) - elapsedSeconds;
+
+// //       setTimeLeft(Math.max(0, remainingTime));
+
+// //       if (remainingTime <= 0) {
+// //         clearInterval(interval);
+// //         toast.error("Time is up! Submitting answers immediately...", { duration: 5000 });
+// //         submitExam();
+// //       }
+// //     }, 1000);
+
+// //     return () => clearInterval(interval);
+// //   }, [attempt, exam, submitExam, isSubmitting]);
+
+// //   // 4. Persistence Mutator for Database State Upserts
+// //   const saveAnswerToDB = async (questionId, responseValue) => {
+// //     if (!attempt) return;
+    
+// //     // Optimistic UI state tracking
+// //     setAnswers(prev => ({ ...prev, [questionId]: responseValue }));
+
+// //     const { error } = await supabase
+// //       .from("answers")
+// //       .upsert({
+// //         attempt_id: attempt.id,
+// //         question_id: questionId,
+// //         answer: responseValue
+// //       }, { onConflict: "attempt_id,question_id" }); // Handles overwrite seamlessly
+
+// //     if (error) {
+// //       console.error("Answer failed to sync to remote node: ", error);
+// //       toast.error("Network sync lag detected.");
+// //     }
+// //   };
+
+// //   const toggleFlag = (qId) => setFlags(prev => ({ ...prev, [qId]: !prev[qId] }));
+
+// //   // Loading Screens
+// //   if (loading) return (
+// //     <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-3">
+// //       <Loader2 className="animate-spin text-indigo-600" size={36} />
+// //       <span className="text-sm text-slate-500 font-bold">Synchronizing assessment nodes...</span>
+// //     </div>
+// //   );
+
+// //   if (!exam || questions.length === 0) return (
+// //     <div className="h-screen flex flex-col justify-center items-center bg-slate-50 gap-4">
+// //       <AlertTriangle className="text-amber-500" size={48} />
+// //       <p className="font-black text-slate-800">Exam context mapping missing or empty.</p>
+// //       <button onClick={() => navigate(-1)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl">Go Back</button>
+// //     </div>
+// //   );
+
+// //   const currentQuestion = questions[currentIdx];
+
+// //   return (
+// //     <div className="flex h-screen bg-slate-50">
+// //       {/* ===== SIDEBAR COMPONENT MATRIX ===== */}
+// //       <aside className="w-80 bg-white border-r border-slate-100 p-6 flex flex-col justify-between overflow-y-auto">
+// //         <div>
+// //           <button 
+// //             onClick={() => { if(confirm("Abandon exam? Progress saves but timer keeps running!")) navigate(-1); }} 
+// //             className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 font-bold text-xs uppercase"
+// //           >
+// //             <ArrowLeft size={14} /> Exit Room
+// //           </button>
+          
+// //           <h3 className="font-black text-slate-900 text-xs tracking-wider uppercase mb-4">Navigation Tree</h3>
+// //           <div className="grid grid-cols-4 gap-2">
+// //             {questions.map((q, idx) => {
+// //               const isFlagged = flags[q.id];
+// //               const isAnswered = answers[q.id] !== undefined && answers[q.id] !== "";
+// //               const isCurrent = idx === currentIdx;
+
+// //               return (
+// //                 <button
+// //                   key={q.id}
+// //                   onClick={() => setCurrentIdx(idx)}
+// //                   className={`h-11 w-11 rounded-xl border text-sm font-black transition active:scale-95 flex items-center justify-center ${
+// //                     isCurrent ? 'ring-2 ring-indigo-600 ring-offset-2' : ''
+// //                   } ${
+// //                     isFlagged ? 'bg-amber-400 border-amber-500 text-white shadow-sm' :
+// //                     isAnswered ? 'bg-emerald-500 border-emerald-600 text-white' : 
+// //                     'bg-slate-50 border-slate-100 text-slate-600 hover:bg-slate-100'
+// //                   }`}
+// //                 >
+// //                   {idx + 1}
+// //                 </button>
+// //               );
+// //             })}
+// //           </div>
 // //         </div>
-// //     );
+
+// //         {/* Legend status markers */}
+// //         <div className="bg-slate-50 p-4 rounded-2xl space-y-2 mt-6 text-[11px] font-bold text-slate-500">
+// //           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-emerald-500"/> Saved Response</div>
+// //           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-amber-400"/> Flagged For Review</div>
+// //           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded bg-slate-50 border"/> Not Attempted</div>
+// //         </div>
+// //       </aside>
+
+// //       {/* ===== MAIN WORKSPACE ===== */}
+// //       <main className="flex-1 flex flex-col">
+// //         {/* Header Block */}
+// //         <header className="bg-white px-8 py-5 border-b border-slate-100 flex justify-between items-center shadow-sm">
+// //           <div>
+// //             <h1 className="font-black text-slate-900 text-lg tracking-tight">{exam.title}</h1>
+// //             <p className="text-slate-400 text-xs font-bold">Targeted Assessment Sandbox</p>
+// //           </div>
+
+// //           {/* Precision Clock Module */}
+// //           <div className={`flex items-center gap-2 px-5 py-2 rounded-2xl font-mono font-black text-sm shadow-sm border transition-all ${
+// //             timeLeft < 120 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-slate-900 text-white border-transparent'
+// //           }`}>
+// //             <Clock size={16} />
+// //             {Math.floor(timeLeft / 60)}:{("0" + Math.floor(timeLeft % 60)).slice(-2)}
+// //           </div>
+// //         </header>
+
+// //         {/* Interactive Workspace Area */}
+// //         <section className="flex-1 p-8 overflow-y-auto max-w-4xl w-full mx-auto">
+// //           <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+// //             <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black tracking-widest uppercase">
+// //               Question {currentIdx + 1} of {questions.length} ({currentQuestion.marks || 1} Marks)
+// //             </span>
+// //             <h2 className="text-xl text-slate-800 font-bold mt-4 mb-8 leading-relaxed">
+// //               {currentQuestion.question}
+// //             </h2>
+
+// //             {/* MCQ Input Mode */}
+// //             {currentQuestion.type === "mcq" && currentQuestion.options && (
+// //               <div className="space-y-3">
+// //                 {currentQuestion.options.map((opt) => {
+// //                   const isChecked = answers[currentQuestion.id] === opt;
+// //                   return (
+// //                     <button
+// //                       key={opt}
+// //                       onClick={() => saveAnswerToDB(currentQuestion.id, opt)}
+// //                       className={`block w-full text-left p-4 border-2 rounded-2xl font-medium text-sm transition-all active:scale-[0.99] ${
+// //                         isChecked 
+// //                           ? 'bg-indigo-50/50 border-indigo-600 text-indigo-900 font-bold' 
+// //                           : 'border-slate-100 text-slate-600 hover:bg-slate-50/80'
+// //                       }`}
+// //                     >
+// //                       {opt}
+// //                     </button>
+// //                   );
+// //                 })}
+// //               </div>
+// //             )}
+
+// //             {/* Open Form Inputs */}
+// //             {(currentQuestion.type === "short" || currentQuestion.type === "debug") && (
+// //               <textarea
+// //                 className="w-full border-2 border-slate-100 bg-slate-50/50 p-5 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 text-sm placeholder:text-slate-300 shadow-inner"
+// //                 rows={6}
+// //                 value={answers[currentQuestion.id] || ""}
+// //                 placeholder="Type your formal code snippet or textual response evaluation here..."
+// //                 onChange={e => saveAnswerToDB(currentQuestion.id, e.target.value)}
+// //               />
+// //             )}
+// //           </div>
+// //         </section>
+
+// //         {/* Action Bottom Control Navigation Bar */}
+// //         <footer className="px-8 py-5 bg-white border-t border-slate-100 flex justify-between items-center shadow-lg">
+// //           <button 
+// //             onClick={() => toggleFlag(currentQuestion.id)} 
+// //             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition ${
+// //               flags[currentQuestion.id] ? 'bg-amber-400 text-white' : 'text-amber-500 hover:bg-amber-50'
+// //             }`}
+// //           >
+// //             <Flag size={16} className={flags[currentQuestion.id] ? "fill-white" : ""} /> Flag for Review
+// //           </button>
+
+// //           <div className="flex gap-3">
+// //             <button 
+// //               disabled={currentIdx === 0}
+// //               onClick={() => setCurrentIdx(p => p - 1)} 
+// //               className="px-5 py-2.5 border border-slate-200 text-slate-600 font-black text-xs rounded-xl disabled:opacity-30 disabled:cursor-not-allowed uppercase tracking-wider"
+// //             >
+// //               Previous
+// //             </button>
+            
+// //             {currentIdx < questions.length - 1 ? (
+// //               <button 
+// //                 onClick={() => setCurrentIdx(p => p + 1)} 
+// //                 className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl uppercase tracking-wider"
+// //               >
+// //                 Next
+// //               </button>
+// //             ) : (
+// //               <button 
+// //                 disabled={isSubmitting}
+// //                 onClick={() => { if(confirm("Are you sure you want to finish and submit?")) submitExam(); }} 
+// //                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl flex items-center gap-2 uppercase tracking-wider shadow-md"
+// //               >
+// //                 {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />} Submit Exam
+// //               </button>
+// //             )}
+// //           </div>
+// //         </footer>
+// //       </main>
+// //     </div>
+// //   );
 // // }
+// // // import { useEffect, useState, useCallback } from "react";
+// // // import { supabase } from "../../../supabase";
+// // // import { useParams } from "react-router-dom";
+
+// // // // const ContentRenderer = ({ q }) => {
+// // // //   switch(q.type) {
+// // // //     case 'code':
+// // // //       return <pre className="bg-black text-green-400 p-4 rounded overflow-x-auto">{q.content}</pre>;
+// // // //     case 'image':
+// // // //       return <img src={q.media_url} alt="Question Graphic" className="rounded-lg shadow-sm" />;
+// // // //     default:
+// // // //       return <p className="text-lg text-gray-800">{q.content}</p>;
+// // // //   }
+// // // // };
+// // // export default function ExamPage({ user }) {
+// // //     const { id } = useParams(); // ✅ Correct: Inside the component
+
+// // //     const [exam, setExam] = useState(null);
+// // //     const [questions, setQuestions] = useState([]);
+// // //     const [attempt, setAttempt] = useState(null);
+// // //     const [answers, setAnswers] = useState({});
+// // //     const [timeLeft, setTimeLeft] = useState(0);
+// // //     const [loading, setLoading] = useState(true);
+
+// // //     // 1. Load Exam and Questions first
+// // //     useEffect(() => {
+// // //         const fetchData = async () => {
+// // //             setLoading(true);
+
+// // //             // Fetch Exam
+// // //             const { data: examData } = await supabase
+// // //                 .from("exams")
+// // //                 .select("*")
+// // //                 .eq("id", id)
+// // //                 .single();
+
+// // //             if (examData) {
+// // //                 setExam(examData);
+// // //                 setTimeLeft(examData.duration_minutes * 60);
+
+// // //                 // Fetch Questions
+// // //                 const { data: qData } = await supabase
+// // //                     .from("questions")
+// // //                     .select("*")
+// // //                     .eq("exam_id", examData.id);
+
+// // //                 setQuestions(qData || []);
+
+// // //                 // 2. Start/Initialize Attempt
+// // //                 const { data: attemptData } = await supabase
+// // //                     .from("attempts")
+// // //                     .insert({
+// // //                         exam_id: examData.id,
+// // //                         student_id: user?.id,
+// // //                         start_time: new Date()
+// // //                     })
+// // //                     .select()
+// // //                     .single();
+
+// // //                 setAttempt(attemptData);
+// // //             }
+// // //             setLoading(false);
+// // //         };
+
+// // //         if (id && user) fetchData();
+// // //     }, [id, user]);
+
+// // //     // 🧠 Submit Function (defined with useCallback to avoid re-initialization issues)
+// // //     const submitExam = useCallback(async () => {
+// // //         if (!attempt) return;
+
+// // //         const { data: allAnswers } = await supabase
+// // //             .from("answers")
+// // //             .select("*")
+// // //             .eq("attempt_id", attempt.id);
+
+// // //         let score = 0;
+// // //         allAnswers?.forEach(a => {
+// // //             const q = questions.find(q => q.id === a.question_id);
+// // //             if (q?.type === "mcq" && a.answer === q.correct_answer) {
+// // //                 score += q.marks;
+// // //             }
+// // //         });
+
+// // //         await supabase
+// // //             .from("attempts")
+// // //             .update({ score, end_time: new Date() })
+// // //             .eq("id", attempt.id);
+
+// // //         alert(`Exam submitted! Your score: ${score}`);
+// // //     }, [attempt, questions]);
+
+// // //     // ⏱ Timer Logic
+// // //     useEffect(() => {
+// // //         if (!attempt || !exam) return;
+
+// // //         const interval = setInterval(() => {
+// // //             const elapsed = (Date.now() - new Date(attempt.start_time)) / 1000;
+// // //             const remaining = (exam.duration_minutes * 60) - elapsed;
+
+// // //             setTimeLeft(Math.max(0, remaining));
+
+// // //             if (remaining <= 0) {
+// // //                 clearInterval(interval);
+// // //                 submitExam();
+// // //             }
+// // //         }, 1000);
+
+// // //         return () => clearInterval(interval);
+// // //     }, [attempt, exam, submitExam]);
+
+// // //     // 💾 Save answer
+// // //     const saveAnswer = async (qId, value) => {
+// // //         if (!attempt) return;
+// // //         setAnswers(prev => ({ ...prev, [qId]: value }));
+
+// // //         await supabase.from("answers").upsert({
+// // //             attempt_id: attempt.id,
+// // //             question_id: qId,
+// // //             answer: value
+// // //         });
+// // //     };
+
+// // //     if (loading) return <div className="p-10">Loading Exam Content...</div>;
+// // //     if (!exam) return <div className="p-10">Exam not found.</div>;
+
+// // //     return (
+// // //         <div className="p-6 max-w-4xl mx-auto">
+// // //             <div className="fixed top-4 right-4 bg-red-600 text-white px-4 py-2 rounded-full font-mono shadow-lg">
+// // //                 ⏱ {Math.floor(timeLeft / 60)}:
+// // //                 {("0" + Math.floor(timeLeft % 60)).slice(-2)}
+// // //             </div>
+
+// // //             <h1 className="text-3xl font-bold mb-2">{exam.title}</h1>
+// // //             <p className="text-gray-600 mb-8">Total Questions: {questions.length}</p>
+
+// // //             {questions.map((q, index) => (
+// // //                 <div key={q.id} className="mb-8 p-6 bg-white border rounded-xl shadow-sm">
+// // //                     <p className="text-lg font-medium mb-4">{index + 1}. {q.question}</p>
+
+// // //                     {q.type === "mcq" && q.options && (
+// // //                         <div className="space-y-2">
+// // //                             {q.options.map(opt => (
+// // //                                 <label key={opt} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+// // //                                     <input
+// // //                                         type="radio"
+// // //                                         name={q.id}
+// // //                                         className="w-4 h-4 text-blue-600"
+// // //                                         onChange={() => saveAnswer(q.id, opt)}
+// // //                                     />
+// // //                                     <span>{opt}</span>
+// // //                                 </label>
+// // //                             ))}
+// // //                         </div>
+// // //                     )}
+
+// // //                     {(q.type === "short" || q.type === "debug") && (
+// // //                         <textarea
+// // //                             className="w-full border rounded-lg p-3 mt-2 focus:ring-2 focus:ring-blue-500 outline-none"
+// // //                             rows="4"
+// // //                             placeholder="Type your answer here..."
+// // //                             onChange={e => saveAnswer(q.id, e.target.value)}
+// // //                         />
+// // //                     )}
+// // //                 </div>
+// // //             ))}
+
+// // //             <button
+// // //                 onClick={submitExam}
+// // //                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors"
+// // //             >
+// // //                 Finish and Submit Exam
+// // //             </button>
+// // //         </div>
+// // //     );
+// // // }
+// // // // import { useEffect, useState } from "react";
+// // // // import { supabase } from "../../supabase";
+// // // // import { useParams } from "react-router-dom";
+
+// // // // export default function ExamPage({ user }) {
+// // // //     const { id } = useParams(); // ✅ inside component
+
+// // // //     const [exam, setExam] = useState(null);
+// // // //     const [questions, setQuestions] = useState([]);
+// // // //     const [attempt, setAttempt] = useState(null);
+// // // //     const [answers, setAnswers] = useState({});
+// // // //     const [timeLeft, setTimeLeft] = useState(0);
+
+// // // //     // ✅ Load exam
+// // // //     useEffect(() => {
+// // // //         const loadExam = async () => {
+// // // //             const { data } = await supabase
+// // // //                 .from("exams")
+// // // //                 .select("*")
+// // // //                 .eq("id", id)
+// // // //                 .single();
+
+// // // //             if (data) {
+// // // //                 setExam(data);
+// // // //                 setTimeLeft(data.duration_minutes * 60);
+// // // //             }
+// // // //         };
+
+// // // //         loadExam();
+// // // //     }, [id]);
+
+// // // //     // ✅ Load questions
+// // // //     useEffect(() => {
+// // // //         if (!exam) return;
+
+// // // //         const loadQuestions = async () => {
+// // // //             const { data } = await supabase
+// // // //                 .from("questions")
+// // // //                 .select("*")
+// // // //                 .eq("exam_id", exam.id);
+
+// // // //             setQuestions(data || []);
+// // // //         };
+
+// // // //         loadQuestions();
+// // // //     }, [exam]);
+
+// // // //     // ✅ Start attempt
+// // // //     useEffect(() => {
+// // // //         if (!exam) return;
+
+// // // //         const start = async () => {
+// // // //             const { data } = await supabase
+// // // //                 .from("attempts")
+// // // //                 .insert({
+// // // //                     exam_id: exam.id,
+// // // //                     student_id: user.id,
+// // // //                     start_time: new Date()
+// // // //                 })
+// // // //                 .select()
+// // // //                 .single();
+
+// // // //             setAttempt(data);
+// // // //         };
+
+// // // //         start();
+// // // //     }, [exam]);
+
+// // // //     // ⏱ Timer
+// // // //     useEffect(() => {
+// // // //         if (!attempt || !exam) return;
+
+// // // //         const interval = setInterval(() => {
+// // // //             const elapsed =
+// // // //                 (Date.now() - new Date(attempt.start_time)) / 1000;
+
+// // // //             const remaining =
+// // // //                 exam.duration_minutes * 60 - elapsed;
+
+// // // //             setTimeLeft(Math.max(0, remaining));
+
+// // // //             if (remaining <= 0) submitExam();
+// // // //         }, 1000);
+
+// // // //         return () => clearInterval(interval);
+// // // //     }, [attempt, exam]);
+
+// // // //     // 💾 Save answer
+// // // //     const saveAnswer = async (qId, value) => {
+// // // //         if (!attempt) return;
+
+// // // //         setAnswers(prev => ({ ...prev, [qId]: value }));
+
+// // // //         await supabase.from("answers").upsert({
+// // // //             attempt_id: attempt.id,
+// // // //             question_id: qId,
+// // // //             answer: value
+// // // //         });
+// // // //     };
+
+// // // //     // 🧠 Submit
+// // // //     const submitExam = async () => {
+// // // //         if (!attempt) return;
+
+// // // //         const { data: allAnswers } = await supabase
+// // // //             .from("answers")
+// // // //             .select("*")
+// // // //             .eq("attempt_id", attempt.id);
+
+// // // //         let score = 0;
+
+// // // //         allAnswers.forEach(a => {
+// // // //             const q = questions.find(q => q.id === a.question_id);
+
+// // // //             if (q?.type === "mcq" && a.answer === q.correct_answer) {
+// // // //                 score += q.marks;
+// // // //             }
+// // // //         });
+
+// // // //         await supabase
+// // // //             .from("attempts")
+// // // //             .update({
+// // // //                 score,
+// // // //                 end_time: new Date()
+// // // //             })
+// // // //             .eq("id", attempt.id);
+
+// // // //         alert("Exam submitted!");
+// // // //     };
+
+// // // //     if (!exam) return <p>Loading exam...</p>;
+
+// // // //     return (
+// // // //         <div className="p-6">
+// // // //             {/* ⏱ Timer */}
+// // // //             <div className="fixed top-4 right-4 bg-black text-white px-4 py-2 rounded">
+// // // //                 ⏱ {Math.floor(timeLeft / 60)}:
+// // // //                 {("0" + (timeLeft % 60)).slice(-2)}
+// // // //             </div>
+
+// // // //             <h1 className="text-xl font-bold mb-4">{exam.title}</h1>
+
+// // // //             {questions.map(q => (
+// // // //                 <div key={q.id} className="mb-6 p-4 border rounded">
+// // // //                     <p className="font-semibold">{q.question}</p>
+
+// // // //                     {q.type === "mcq" &&
+// // // //                         q.options.map(opt => (
+// // // //                             <label key={opt} className="block">
+// // // //                                 <input
+// // // //                                     type="radio"
+// // // //                                     name={q.id}
+// // // //                                     onChange={() => saveAnswer(q.id, opt)}
+// // // //                                 />
+// // // //                                 {opt}
+// // // //                             </label>
+// // // //                         ))}
+
+// // // //                     {(q.type === "short" || q.type === "debug") && (
+// // // //                         <textarea
+// // // //                             className="w-full border p-2 mt-2"
+// // // //                             onChange={e => saveAnswer(q.id, e.target.value)}
+// // // //                         />
+// // // //                     )}
+
+// // // //                     {q.type === "practical" && (
+// // // //                         <input
+// // // //                             type="text"
+// // // //                             placeholder="Paste Scratch project link"
+// // // //                             className="w-full border p-2 mt-2"
+// // // //                             onChange={e => saveAnswer(q.id, e.target.value)}
+// // // //                         />
+// // // //                     )}
+// // // //                 </div>
+// // // //             ))}
+
+// // // //             <button
+// // // //                 onClick={submitExam}
+// // // //                 className="bg-blue-600 text-white px-6 py-2 rounded"
+// // // //             >
+// // // //                 Submit Exam
+// // // //             </button>
+// // // //         </div>
+// // // //     );
+// // // // }
+// // // // // import { useEffect, useState } from "react";
+// // // // // import { supabase } from "../supabase";
+// // // // // import { useParams } from "react-router-dom";
+
+// // // // // const { id } = useParams();
+
+// // // // // export default function ExamPage({ exam, user }) {
+// // // // //     const [questions, setQuestions] = useState([]);
+// // // // //     const [attempt, setAttempt] = useState(null);
+// // // // //     const [answers, setAnswers] = useState({});
+// // // // //     const [timeLeft, setTimeLeft] = useState(0);
+// // // // //     const { data: exam } = await supabase
+// // // // //         .from("exams")
+// // // // //         .select("*")
+// // // // //         .eq("id", id)
+// // // // //         .single();
+
+// // // // //     // 🚀 Start exam
+// // // // //     useEffect(() => {
+// // // // //         const start = async () => {
+// // // // //             const { data } = await supabase
+// // // // //                 .from("attempts")
+// // // // //                 .insert({
+// // // // //                     exam_id: exam.id,
+// // // // //                     student_id: user.id,
+// // // // //                     start_time: new Date()
+// // // // //                 })
+// // // // //                 .select()
+// // // // //                 .single();
+
+// // // // //             setAttempt(data);
+// // // // //             setTimeLeft(exam.duration_minutes * 60);
+// // // // //         };
+
+// // // // //         start();
+// // // // //     }, []);
+
+// // // // //     // ⏱ Timer
+// // // // //     useEffect(() => {
+// // // // //         if (!attempt) return;
+
+// // // // //         const interval = setInterval(() => {
+// // // // //             const elapsed =
+// // // // //                 (Date.now() - new Date(attempt.start_time)) / 1000;
+// // // // //             const remaining =
+// // // // //                 exam.duration_minutes * 60 - elapsed;
+
+// // // // //             setTimeLeft(Math.max(0, remaining));
+
+// // // // //             if (remaining <= 0) submitExam();
+// // // // //         }, 1000);
+
+// // // // //         return () => clearInterval(interval);
+// // // // //     }, [attempt]);
+
+// // // // //     // 📥 Load questions
+// // // // //     useEffect(() => {
+// // // // //         const load = async () => {
+// // // // //             const { data } = await supabase
+// // // // //                 .from("questions")
+// // // // //                 .select("*")
+// // // // //                 .eq("exam_id", exam.id);
+
+// // // // //             setQuestions(data);
+// // // // //         };
+
+// // // // //         load();
+// // // // //     }, []);
+
+// // // // //     // 💾 Save answer
+// // // // //     const saveAnswer = async (qId, value) => {
+// // // // //         setAnswers(prev => ({ ...prev, [qId]: value }));
+
+// // // // //         await supabase.from("answers").upsert({
+// // // // //             attempt_id: attempt.id,
+// // // // //             question_id: qId,
+// // // // //             answer: value
+// // // // //         });
+// // // // //     };
+
+// // // // //     // 🧠 Submit
+// // // // //     const submitExam = async () => {
+// // // // //         const { data: allAnswers } = await supabase
+// // // // //             .from("answers")
+// // // // //             .select("*")
+// // // // //             .eq("attempt_id", attempt.id);
+
+// // // // //         const { data: qs } = await supabase
+// // // // //             .from("questions")
+// // // // //             .select("*")
+// // // // //             .eq("exam_id", exam.id);
+
+// // // // //         let score = 0;
+
+// // // // //         allAnswers.forEach(a => {
+// // // // //             const q = qs.find(q => q.id === a.question_id);
+
+// // // // //             if (q.type === "mcq" && a.answer === q.correct_answer) {
+// // // // //                 score += q.marks;
+// // // // //             }
+// // // // //         });
+
+// // // // //         await supabase
+// // // // //             .from("attempts")
+// // // // //             .update({
+// // // // //                 score,
+// // // // //                 end_time: new Date()
+// // // // //             })
+// // // // //             .eq("id", attempt.id);
+
+// // // // //         alert("Exam submitted!");
+// // // // //     };
+
+// // // // //     return (
+// // // // //         <div className="p-6">
+// // // // //             {/* ⏱ Timer */}
+// // // // //             <div className="fixed top-4 right-4 bg-black text-white px-4 py-2 rounded">
+// // // // //                 ⏱ {Math.floor(timeLeft / 60)}:
+// // // // //                 {("0" + (timeLeft % 60)).slice(-2)}
+// // // // //             </div>
+
+// // // // //             <h1 className="text-xl font-bold mb-4">{exam.title}</h1>
+
+// // // // //             {questions.map(q => (
+// // // // //                 <div key={q.id} className="mb-6 p-4 border rounded">
+// // // // //                     <p className="font-semibold">{q.question}</p>
+
+// // // // //                     {/* MCQ */}
+// // // // //                     {q.type === "mcq" &&
+// // // // //                         q.options.map(opt => (
+// // // // //                             <label key={opt} className="block">
+// // // // //                                 <input
+// // // // //                                     type="radio"
+// // // // //                                     name={q.id}
+// // // // //                                     onChange={() => saveAnswer(q.id, opt)}
+// // // // //                                 />
+// // // // //                                 {opt}
+// // // // //                             </label>
+// // // // //                         ))}
+
+// // // // //                     {/* Short / Debug */}
+// // // // //                     {(q.type === "short" || q.type === "debug") && (
+// // // // //                         <textarea
+// // // // //                             className="w-full border p-2 mt-2"
+// // // // //                             onChange={e =>
+// // // // //                                 saveAnswer(q.id, e.target.value)
+// // // // //                             }
+// // // // //                         />
+// // // // //                     )}
+
+// // // // //                     {/* Practical */}
+// // // // //                     {q.type === "practical" && (
+// // // // //                         <input
+// // // // //                             type="text"
+// // // // //                             placeholder="Paste Scratch project link"
+// // // // //                             className="w-full border p-2 mt-2"
+// // // // //                             onChange={e =>
+// // // // //                                 saveAnswer(q.id, e.target.value)
+// // // // //                             }
+// // // // //                         />
+// // // // //                     )}
+// // // // //                 </div>
+// // // // //             ))}
+
+// // // // //             <button
+// // // // //                 onClick={submitExam}
+// // // // //                 className="bg-blue-600 text-white px-6 py-2 rounded"
+// // // // //             >
+// // // // //                 Submit Exam
+// // // // //             </button>
+// // // // //         </div>
+// // // // //     );
+// // // // // }
