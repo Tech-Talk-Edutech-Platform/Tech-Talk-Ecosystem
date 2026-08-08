@@ -1,10 +1,10 @@
 // SalesDashboard.js
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabase";
-import Loading from "../../dashboards/views/Loading";
+// import Loading from "../../dashboards/views/Loading";
 
 export default function SalesDashboard() {
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState({
     callsToday: 3,
     callsWeek: 4,
@@ -20,7 +20,7 @@ export default function SalesDashboard() {
 
   useEffect(() => {
     const fetchKpis = async () => {
-      setLoading(true);
+      // setLoading(true);
       const now = new Date();
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
@@ -98,13 +98,13 @@ export default function SalesDashboard() {
         leaderboardWeek: leaderboardWeek.data || [],
       });
 
-      setLoading(false);
+      // setLoading(false);
     };
 
     fetchKpis();
   }, []);
 
-  if (loading) return <Loading label="Loading Dashboard..." />;
+  // if (loading) return <Loading label="Loading Dashboard..." />;
 
   return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

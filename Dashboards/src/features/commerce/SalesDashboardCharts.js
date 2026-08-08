@@ -2,7 +2,7 @@
 // https://chatgpt.com/share/698affad-7f20-8011-bc6f-98cabffa9e81
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase";
-import Loading from "../../dashboards/views/Loading";
+// import Loading from "../../dashboards/views/Loading";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   BarChart, Bar, ResponsiveContainer
@@ -16,12 +16,12 @@ const RANGES = {
 
 export default function SalesDashboardCharts() {
   const [range, setRange] = useState("week");
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      // setLoading(true);
       const config = RANGES[range];
       const rows = [];
 
@@ -63,13 +63,13 @@ export default function SalesDashboardCharts() {
       }
 
       setChartData(rows);
-      setLoading(false);
+      // setLoading(false);
     };
 
     fetchData();
   }, [range]);
 
-  if (loading) return <Loading label="Loading Chart Data..." />;
+  // if (loading) return <Loading label="Loading Chart Data..." />;
 
   return (
     <div className="p-6 space-y-6">

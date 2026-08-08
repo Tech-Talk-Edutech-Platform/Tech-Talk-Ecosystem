@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { BookOpen, Plus, Trash2, Layers, BookMarked, Users, GraduationCap, X, LayoutList, Activity, CheckCircle2, Image as ImageIcon, Edit3, FileText, HelpCircle } from "lucide-react";
 import { supabase } from "../../../supabase";
 import toast from "react-hot-toast";
+import QuizBuilderModal from "./QuizBuilderModal";
 
 export default function AdminCoursesView() {
   const [courses, setCourses] = useState([]);
@@ -86,7 +87,52 @@ export default function AdminCoursesView() {
     }
   };
 
-  const fetchCourseDetails = async (courseId) => {
+  // const fetchCourseDetails = async (courseId) => {
+  //   try {
+  //     setDetailsLoading(true);
+      
+  //     const { data: courseData, error: courseError } = await supabase
+  //       .from("courses")
+  //       .select(`
+  //         *,
+  //         course_phases (
+  //           *,
+  //           course_lessons (*)
+  //         )
+  //       `)
+  //       .eq("id", courseId)
+  //       .order("phase_number", { referencedTable: "course_phases", ascending: true })
+  //       .single();
+
+  //     if (courseError) throw courseError;
+
+  //     const { data: enrollmentsData } = await supabase
+  //       .from("student_enrollments")
+  //       .select(`
+  //         student_id,
+  //         users:student_id (
+  //           id, full_name, email, role,
+  //           student_lesson_progress (lesson_id, status)
+  //         )
+  //       `)
+  //       .eq("course_id", courseId);
+
+  //     const enrolledStudents = (enrollmentsData || [])
+  //       .map(e => e.users)
+  //       .filter(Boolean);
+
+  //     setSelectedCourse({
+  //       ...courseData,
+  //       enrolled_users: enrolledStudents
+  //     });
+  //   } catch (err) {
+  //     toast.error("Failed to load course details: " + err.message);
+  //   } finally {
+  //     setDetailsLoading(false);
+  //   }
+  // };
+
+const fetchCourseDetails = async (courseId) => {
     try {
       setDetailsLoading(true);
       
@@ -105,6 +151,7 @@ export default function AdminCoursesView() {
 
       if (courseError) throw courseError;
 
+      // Fetch students via enrollments AND direct assignment fallback
       const { data: enrollmentsData } = await supabase
         .from("student_enrollments")
         .select(`
@@ -116,13 +163,29 @@ export default function AdminCoursesView() {
         `)
         .eq("course_id", courseId);
 
-      const enrolledStudents = (enrollmentsData || [])
-        .map(e => e.users)
-        .filter(Boolean);
+      const { data: directUsersData } = await supabase
+        .from("users")
+        .select(`
+          id, full_name, email, role, assigned_course_id,
+          student_lesson_progress (lesson_id, status)
+        `)
+        .eq("assigned_course_id", courseId)
+        .eq("role", "student");
+
+      // Merge and deduplicate students from both tables
+      const enrolledStudentsMap = new Map();
+      
+      (enrollmentsData || []).forEach(e => {
+        if (e.users) enrolledStudentsMap.set(e.users.id, e.users);
+      });
+      
+      (directUsersData || []).forEach(u => {
+        if (u) enrolledStudentsMap.set(u.id, u);
+      });
 
       setSelectedCourse({
         ...courseData,
-        enrolled_users: enrolledStudents
+        enrolled_users: Array.from(enrolledStudentsMap.values())
       });
     } catch (err) {
       toast.error("Failed to load course details: " + err.message);
@@ -130,7 +193,6 @@ export default function AdminCoursesView() {
       setDetailsLoading(false);
     }
   };
-
   const fetchLessonExtras = async (lesson) => {
     setSelectedLesson(lesson);
     setLessonContentType("notes");
@@ -183,73 +245,7 @@ export default function AdminCoursesView() {
     }
   };
 
-  // const handleSaveNotes = async (e) => {
-  //   e.preventDefault();
-  //   if (!selectedLesson || !selectedCourse) return;
-  //   setSavingNotes(true);
 
-  //   try {
-  //     const { error } = await supabase
-  //       .from("notes")
-  //       .upsert({
-  //         course_id: selectedCourse.id,
-  //         title: lessonNoteTitle.trim() || selectedLesson.title,
-  //         content: lessonNoteContent,
-  //         video_url: lessonVideoUrl.trim() || null
-  //       }, { onConflict: 'course_id,title' });
-
-  //     if (error) throw error;
-  //     toast.success("Lesson notes & materials saved!");
-  //   } catch (err) {
-  //     toast.error("Failed to save notes: " + err.message);
-  //   } finally {
-  //     setSavingNotes(false);
-  //   }
-  // };
-
-  // const handleSaveQuiz = async (e) => {
-  //   e.preventDefault();
-  //   if (!selectedLesson || !selectedCourse) return;
-  //   setSavingQuiz(true);
-
-  //   try {
-  //     // 1. Upsert Quiz
-  //     const { data: quizData, error: quizError } = await supabase
-  //       .from("quizzes")
-  //       .upsert({
-  //         course_id: selectedCourse.id,
-  //         phase_id: selectedLesson.phase_id,
-  //         title: quizTitle.trim() || `${selectedLesson.title} Quiz`,
-  //         type: 'phase_quiz',
-  //         passing_score: parseInt(passingScore, 10) || 70
-  //       }, { onConflict: 'phase_id' })
-  //       .select()
-  //       .single();
-
-  //     if (quizError) throw quizError;
-
-  //     // 2. Delete existing questions for this quiz to replace cleanly
-  //     await supabase.from("quiz_questions").delete().eq("quiz_id", quizData.id);
-
-  //     // 3. Insert new questions
-  //     const formattedQuestions = questions.map((q, idx) => ({
-  //       quiz_id: quizData.id,
-  //       question_text: q.question_text,
-  //       options: q.options,
-  //       correct_option_index: q.correct_option_index,
-  //       position: idx + 1
-  //     }));
-
-  //     const { error: qError } = await supabase.from("quiz_questions").insert(formattedQuestions);
-  //     if (qError) throw qError;
-
-  //     toast.success("Quiz assessment published successfully!");
-  //   } catch (err) {
-  //     toast.error("Failed to save quiz: " + err.message);
-  //   } finally {
-  //     setSavingQuiz(false);
-  //   }
-  // };
   const handleSaveNotes = async (e) => {
     e.preventDefault();
     if (!selectedLesson || !selectedCourse) return;
@@ -896,198 +892,14 @@ export default function AdminCoursesView() {
           </div>
         </div>
       )}
-
-      {/* LESSON EDITOR MODAL (Notes & Quizzes) */}
-      {selectedLesson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-3xl border border-slate-100 dark:border-white/10 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            
-            {/* Modal Header */}
-            <div className="p-6 border-b border-slate-100 dark:border-white/10 flex justify-between items-center">
-              <div>
-                <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 rounded-lg border border-purple-100 dark:border-purple-500/20 mb-1.5 inline-block">
-                  Lesson Content Studio
-                </span>
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">{selectedLesson.title}</h3>
-              </div>
-              <button onClick={() => setSelectedLesson(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-white/10 rounded-full text-slate-400">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Sub-Tabs (Notes vs Quiz) */}
-            <div className="flex items-center gap-2 px-6 border-b border-slate-100 dark:border-white/10 bg-slate-50/50 dark:bg-white/5">
-              <button
-                onClick={() => setLessonContentType("notes")}
-                className={`py-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${lessonContentType === 'notes' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-              >
-                <FileText size={15} /> Lesson Notes & Media
-              </button>
-              <button
-                onClick={() => setLessonContentType("quiz")}
-                className={`py-3 px-4 text-xs font-black uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${lessonContentType === 'quiz' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
-              >
-                <HelpCircle size={15} /> Quiz Assessment
-              </button>
-            </div>
-
-            {/* Modal Sub-Body */}
-            <div className="p-6 overflow-y-auto flex-1 space-y-6">
-              {lessonContentType === 'notes' ? (
-                <form onSubmit={handleSaveNotes} className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Note / Material Title</label>
-                    <input
-                      type="text"
-                      value={lessonNoteTitle}
-                      onChange={(e) => setLessonNoteTitle(e.target.value)}
-                      className="w-full p-3 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 font-bold focus:outline-purple-500 dark:text-white"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Video Walkthrough URL (Optional)</label>
-                    <input
-                      type="url"
-                      placeholder="https://www.youtube.com/embed/..."
-                      value={lessonVideoUrl}
-                      onChange={(e) => setLessonVideoUrl(e.target.value)}
-                      className="w-full p-3 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 font-bold focus:outline-purple-500 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Lesson Content / Markdown Notes</label>
-                    <textarea
-                      rows={6}
-                      placeholder="Type out instructions, code snippets, or study notes for the student..."
-                      value={lessonNoteContent}
-                      onChange={(e) => setLessonNoteContent(e.target.value)}
-                      className="w-full p-3 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 font-bold focus:outline-purple-500 dark:text-white"
-                    />
-                  </div>
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="submit"
-                      disabled={savingNotes}
-                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-md shadow-purple-500/20 transition-all disabled:opacity-50"
-                    >
-                      {savingNotes ? "Saving..." : "Save Notes"}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <form onSubmit={handleSaveQuiz} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Quiz Title</label>
-                      <input
-                        type="text"
-                        value={quizTitle}
-                        onChange={(e) => setQuizTitle(e.target.value)}
-                        className="w-full p-3 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 font-bold focus:outline-purple-500 dark:text-white"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">Passing Score (%)</label>
-                      <input
-                        type="number"
-                        value={passingScore}
-                        onChange={(e) => setPassingScore(e.target.value)}
-                        className="w-full p-3 text-sm rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 font-bold focus:outline-purple-500 dark:text-white"
-                        min="1" max="100"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <h4 className="font-black text-sm text-slate-800 dark:text-white uppercase tracking-wider">Quiz Questions</h4>
-                      <button
-                        type="button"
-                        onClick={() => setQuestions([...questions, { question_text: "", options: ["", "", "", ""], correct_option_index: 0 }])}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-black uppercase tracking-wider"
-                      >
-                        + Add Question
-                      </button>
-                    </div>
-
-                    {questions.map((q, qIndex) => (
-                      <div key={qIndex} className="p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl space-y-3 relative">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-black text-purple-600 dark:text-purple-400">Question #{qIndex + 1}</span>
-                          {questions.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => setQuestions(questions.filter((_, idx) => idx !== qIndex))}
-                              className="text-rose-500 hover:text-rose-600 p-1"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Enter question prompt..."
-                          value={q.question_text}
-                          onChange={(e) => {
-                            const updated = [...questions];
-                            updated[qIndex].question_text = e.target.value;
-                            setQuestions(updated);
-                          }}
-                          className="w-full p-2.5 text-xs rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 font-bold dark:text-white"
-                          required
-                        />
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {q.options.map((opt, optIndex) => (
-                            <div key={optIndex} className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                name={`correct-${qIndex}`}
-                                checked={q.correct_option_index === optIndex}
-                                onChange={() => {
-                                  const updated = [...questions];
-                                  updated[qIndex].correct_option_index = optIndex;
-                                  setQuestions(updated);
-                                }}
-                                title="Mark as correct answer"
-                              />
-                              <input
-                                type="text"
-                                placeholder={`Option ${optIndex + 1}`}
-                                value={opt}
-                                onChange={(e) => {
-                                  const updated = [...questions];
-                                  updated[qIndex].options[optIndex] = e.target.value;
-                                  setQuestions(updated);
-                                }}
-                                className="flex-1 p-2 text-xs rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 font-medium dark:text-white"
-                                required
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <button
-                      type="submit"
-                      disabled={savingQuiz}
-                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-md shadow-purple-500/20 transition-all disabled:opacity-50"
-                    >
-                      {savingQuiz ? "Publishing..." : "Publish Quiz"}
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
-          </div>
-        </div>
+{selectedLesson && (
+        <QuizBuilderModal
+          selectedLesson={selectedLesson}
+          selectedCourse={selectedCourse}
+          onClose={() => setSelectedLesson(null)}
+        />
       )}
+      
     </div>
   );
 }

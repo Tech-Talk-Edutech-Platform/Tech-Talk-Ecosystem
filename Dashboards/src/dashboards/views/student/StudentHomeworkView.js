@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   CheckCircle2,
@@ -7,6 +8,7 @@ import {
   Sparkles,
   ChevronRight,
   Send,
+  AlertCircle,
 } from "lucide-react";
 import { supabase } from "../../../supabase";
 
@@ -83,7 +85,6 @@ export default function StudentHomeworkView({ userId, courseId }) {
 
       if (error) throw error;
 
-      // Update local state smoothly with updated_at included
       setAssignments((prev) =>
         prev.map((a) =>
           a.id === selectedAssignment.id
@@ -139,6 +140,10 @@ export default function StudentHomeworkView({ userId, courseId }) {
     (a) => a.status === "submitted"
   ).length;
 
+  const needsRevisionCount = assignments.filter(
+    (a) => a.status === "needs_revision"
+  ).length;
+
   const completedCount = assignments.filter(
     (a) => a.status === "completed"
   ).length;
@@ -159,16 +164,20 @@ export default function StudentHomeworkView({ userId, courseId }) {
               Track your pending projects, review tutor feedback, and submit your completed coding work.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pending</p>
               <p className="font-black text-xl text-orange-500">{pendingCount}</p>
             </div>
-            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Submitted</p>
               <p className="font-black text-xl text-blue-500">{submittedCount}</p>
             </div>
-            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
+              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Revision</p>
+              <p className="font-black text-xl text-amber-500">{needsRevisionCount}</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
               <p className="font-black text-xl text-green-500">{completedCount}</p>
             </div>
@@ -191,11 +200,15 @@ export default function StudentHomeworkView({ userId, courseId }) {
                           ? "bg-green-500/20 text-green-400"
                           : selectedAssignment.status === "submitted"
                           ? "bg-blue-500/20 text-blue-400"
+                          : selectedAssignment.status === "needs_revision"
+                          ? "bg-amber-500/20 text-amber-400"
                           : "bg-orange-500/20 text-orange-400"
                       }`}
                     >
                       {selectedAssignment.status === "completed" ? (
                         <CheckCircle2 size={20} />
+                      ) : selectedAssignment.status === "needs_revision" ? (
+                        <AlertCircle size={20} />
                       ) : (
                         <Clock size={20} />
                       )}
@@ -206,10 +219,12 @@ export default function StudentHomeworkView({ userId, courseId }) {
                           ? "bg-green-500/10 text-green-600 border border-green-500/25"
                           : selectedAssignment.status === "submitted"
                           ? "bg-blue-500/10 text-blue-600 border border-blue-500/25"
+                          : selectedAssignment.status === "needs_revision"
+                          ? "bg-amber-500/10 text-amber-600 border border-amber-500/25"
                           : "bg-orange-500/10 text-orange-600 border border-orange-500/25"
                       }`}
                     >
-                      {selectedAssignment.status || "Pending"}
+                      {selectedAssignment.status ? selectedAssignment.status.replace("_", " ") : "Pending"}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
@@ -230,6 +245,15 @@ export default function StudentHomeworkView({ userId, courseId }) {
                       "Complete the assigned task and paste your project or file link below for your tutor to review."}
                   </p>
                 </div>
+
+                {selectedAssignment.status === "needs_revision" && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-amber-700 dark:text-amber-300 text-sm space-y-1">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <AlertCircle size={16} /> Revision Required
+                    </p>
+                    <p className="text-xs">Your tutor requested adjustments based on your previous submission. Please review the feedback below and update your link.</p>
+                  </div>
+                )}
 
                 <div className="border-t border-gray-200 dark:border-white/10 pt-6">
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
@@ -266,6 +290,8 @@ export default function StudentHomeworkView({ userId, courseId }) {
                               ? "Resubmit Homework"
                               : selectedAssignment.status === "submitted"
                               ? "Update Submission"
+                              : selectedAssignment.status === "needs_revision"
+                              ? "Resubmit for Review"
                               : "Submit Homework"}
                           </span>
                         </>
@@ -311,6 +337,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
                   const isSelected = selectedAssignment?.id === item.id;
                   const isCompleted = item.status === "completed";
                   const isSubmitted = item.status === "submitted";
+                  const isNeedsRevision = item.status === "needs_revision";
 
                   return (
                     <div
@@ -329,10 +356,18 @@ export default function StudentHomeworkView({ userId, courseId }) {
                               ? "bg-green-500/20 text-green-400"
                               : isSubmitted
                               ? "bg-blue-500/20 text-blue-400"
+                              : isNeedsRevision
+                              ? "bg-amber-500/20 text-amber-400"
                               : "bg-orange-500/20 text-orange-400"
                           }`}
                         >
-                          {isCompleted ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+                          {isCompleted ? (
+                            <CheckCircle2 size={20} />
+                          ) : isNeedsRevision ? (
+                            <AlertCircle size={20} />
+                          ) : (
+                            <Clock size={20} />
+                          )}
                         </div>
                         <div>
                           <p
@@ -344,7 +379,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
                           </p>
                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
                             {item.status
-                              ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
+                              ? item.status.replace("_", " ")
                               : "Pending"}
                           </p>
                         </div>
@@ -365,9 +400,10 @@ export default function StudentHomeworkView({ userId, courseId }) {
     </div>
   );
 }
+
+
 // import React, { useEffect, useState } from "react";
 // import {
-//   BookOpen,
 //   CheckCircle2,
 //   Clock,
 //   Upload,
@@ -385,11 +421,20 @@ export default function StudentHomeworkView({ userId, courseId }) {
 //   const [submissionText, setSubmissionText] = useState("");
 //   const [submitting, setSubmitting] = useState(false);
 
+
 //   useEffect(() => {
 //     if (userId) {
 //       fetchHomework();
 //     }
 //   }, [userId, courseId]);
+
+//   useEffect(() => {
+//     if (selectedAssignment) {
+//       setSubmissionText(selectedAssignment.submission_link || "");
+//     } else {
+//       setSubmissionText("");
+//     }
+//   }, [selectedAssignment]);
 
 //   const fetchHomework = async () => {
 //     try {
@@ -411,20 +456,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
 //           fetchedAssignments[0];
 
 //         setSelectedAssignment(assignment);
-//         // setSubmissionText(assignment.submission_link || "");
-// //         useEffect(() => {
-// //   if (selectedAssignment) {
-// //     setSubmissionText(selectedAssignment.submission_link || "");
-// //   }
-// // }, [selectedAssignment]);
-// //       }
-//         useEffect(() => {
-//   if (selectedAssignment) {
-//     setSubmissionText(selectedAssignment.submission_link || "");
-//   } else {
-//     setSubmissionText("");
-//   }
-// }, [selectedAssignment]);
+//       }
 //     } catch (err) {
 //       console.error("Error fetching homework:", err.message);
 //     } finally {
@@ -434,7 +466,6 @@ export default function StudentHomeworkView({ userId, courseId }) {
 
 //   const handleSelectAssignment = (assignment) => {
 //     setSelectedAssignment(assignment);
-//     // setSubmissionText(assignment.submission_link || "");
 //   };
 
 //   const handleSubmitHomework = async (e) => {
@@ -457,7 +488,6 @@ export default function StudentHomeworkView({ userId, courseId }) {
 
 //       if (error) throw error;
 
-//       // Update local state smoothly
 //       setAssignments((prev) =>
 //         prev.map((a) =>
 //           a.id === selectedAssignment.id
@@ -466,17 +496,23 @@ export default function StudentHomeworkView({ userId, courseId }) {
 //                 submission_link: submissionText,
 //                 status: "submitted",
 //                 submitted_at: timestamp,
+//                 updated_at: timestamp,
 //               }
 //             : a
 //         )
 //       );
 
-//       setSelectedAssignment((prev) => ({
-//         ...prev,
-//         submission_link: submissionText,
-//         status: "submitted",
-//         submitted_at: timestamp,
-//       }));
+//       setSelectedAssignment((prev) =>
+//         prev
+//           ? {
+//               ...prev,
+//               submission_link: submissionText,
+//               status: "submitted",
+//               submitted_at: timestamp,
+//               updated_at: timestamp,
+//             }
+//           : null
+//       );
 
 //       alert("Homework submitted successfully! 🎉");
 //     } catch (err) {
@@ -711,10 +747,9 @@ export default function StudentHomeworkView({ userId, courseId }) {
 //                             {item.task_name}
 //                           </p>
 //                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
-//                             // {item.status || "Pending"}
-//                           {item.status
-//   ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
-//   : "Pending"}
+//                             {item.status
+//                               ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
+//                               : "Pending"}
 //                           </p>
 //                         </div>
 //                       </div>
@@ -736,7 +771,6 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // }
 // // import React, { useEffect, useState } from "react";
 // // import {
-// //   BookOpen,
 // //   CheckCircle2,
 // //   Clock,
 // //   Upload,
@@ -746,6 +780,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //   Send,
 // // } from "lucide-react";
 // // import { supabase } from "../../../supabase";
+// // import toast from "react-hot-toast";
 
 // // export default function StudentHomeworkView({ userId, courseId }) {
 // //   const [loading, setLoading] = useState(true);
@@ -760,12 +795,30 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //     }
 // //   }, [userId, courseId]);
 
+// //   useEffect(() => {
+// //     if (selectedAssignment) {
+// //       setSubmissionText(selectedAssignment.submission_link || "");
+// //     } else {
+// //       setSubmissionText("");
+// //     }
+// //   }, [selectedAssignment]);
+
 // //   const fetchHomework = async () => {
 // //     try {
 // //       setLoading(true);
 // //       const { data, error } = await supabase
 // //         .from("student_assignments")
-// //         .select("*")
+// //         .select(`
+// //           *,
+// //           course_lessons:lesson_id (
+// //             title,
+// //             position,
+// //             course_phases (
+// //               title,
+// //               phase_number
+// //             )
+// //           )
+// //         `)
 // //         .eq("student_id", userId)
 // //         .order("created_at", { ascending: false });
 
@@ -774,23 +827,16 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //       const fetchedAssignments = data || [];
 // //       setAssignments(fetchedAssignments);
 
-// //       // Automatically select the first assignment if none is selected, or keep selection updated
-// //       // if (fetchedAssignments.length > 0) {
-// //       //   setSelectedAssignment((prev) => {
-// //       //     if (!prev) return fetchedAssignments[0];
-// //       //     return fetchedAssignments.find((a) => a.id === prev.id) || fetchedAssignments[0];
-// //       //   });
-// //       // }
 // //       if (fetchedAssignments.length > 0) {
-// //   const assignment =
-// //     fetchedAssignments.find((a) => a.id === selectedAssignment?.id) ||
-// //     fetchedAssignments[0];
+// //         const assignment =
+// //           fetchedAssignments.find((a) => a.id === selectedAssignment?.id) ||
+// //           fetchedAssignments[0];
 
-// //   setSelectedAssignment(assignment);
-// //   setSubmissionText(assignment.submission_link || "");
-// // }
+// //         setSelectedAssignment(assignment);
+// //       }
 // //     } catch (err) {
 // //       console.error("Error fetching homework:", err.message);
+// //       toast.error("Failed to load homework assignments");
 // //     } finally {
 // //       setLoading(false);
 // //     }
@@ -798,7 +844,6 @@ export default function StudentHomeworkView({ userId, courseId }) {
 
 // //   const handleSelectAssignment = (assignment) => {
 // //     setSelectedAssignment(assignment);
-// //     setSubmissionText(assignment.submission_link || "");
 // //   };
 
 // //   const handleSubmitHomework = async (e) => {
@@ -821,7 +866,6 @@ export default function StudentHomeworkView({ userId, courseId }) {
 
 // //       if (error) throw error;
 
-// //       // Update local state smoothly
 // //       setAssignments((prev) =>
 // //         prev.map((a) =>
 // //           a.id === selectedAssignment.id
@@ -830,22 +874,28 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //                 submission_link: submissionText,
 // //                 status: "submitted",
 // //                 submitted_at: timestamp,
+// //                 updated_at: timestamp,
 // //               }
 // //             : a
 // //         )
 // //       );
 
-// //       setSelectedAssignment((prev) => ({
-// //         ...prev,
-// //         submission_link: submissionText,
-// //         status: "submitted",
-// //         submitted_at: timestamp,
-// //       }));
+// //       setSelectedAssignment((prev) =>
+// //         prev
+// //           ? {
+// //               ...prev,
+// //               submission_link: submissionText,
+// //               status: "submitted",
+// //               submitted_at: timestamp,
+// //               updated_at: timestamp,
+// //             }
+// //           : null
+// //       );
 
-// //       alert("Homework submitted successfully! 🎉");
+// //       toast.success("Homework submitted successfully! 🎉");
 // //     } catch (err) {
 // //       console.error("Error submitting homework:", err.message);
-// //       alert("Failed to submit homework. Please try again.");
+// //       toast.error("Failed to submit homework. Please try again.");
 // //     } finally {
 // //       setSubmitting(false);
 // //     }
@@ -856,57 +906,52 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //       <div className="min-h-[60vh] flex items-center justify-center">
 // //         <div className="bg-white/15 backdrop-blur-xl border border-white/10 rounded-[30px] p-8 text-center shadow-2xl">
 // //           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-5" />
-// //           <h2 className="text-white text-xl font-bold">Loading Homework...</h2>
-// //           <p className="text-gray-300 mt-2">Fetching your assignments 🚀</p>
+// //           <h2 className="text-white text-xl font-bold">Loading Lesson Homework...</h2>
+// //           <p className="text-gray-300 mt-2">Fetching your lesson tasks 🚀</p>
 // //         </div>
 // //       </div>
 // //     );
 // //   }
 
+// //   const pendingCount = assignments.filter((a) => a.status === "pending").length;
+// //   const submittedCount = assignments.filter((a) => a.status === "submitted").length;
 // //   const completedCount = assignments.filter((a) => a.status === "completed").length;
-// //   // const pendingCount = assignments.filter((a) => a.status === "pending" || a.status === "submitted").length;
-// // const pendingCount = assignments.filter(
-// //   a => a.status === "pending"
-// // ).length;
 
-// // const submittedCount = assignments.filter(
-// //   a => a.status === "submitted"
-// // ).length;
-
-// // const completedCount = assignments.filter(
-// //   a => a.status === "completed"
-// // ).length;
 // //   return (
-// //     <div className="space-y-6 p-4 md:p-6 text-gray-900 dark:text-white">
+// //     <div className="space-y-6 p-4 md:p-6 text-gray-900 dark:text-white max-w-7xl mx-auto">
 // //       {/* Header Banner */}
 // //       <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl relative overflow-hidden">
-// //         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 blur-[120px] pointer-events-none" />
+// //         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 blur-[120px] pointer-events-none" />
 // //         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 // //           <div>
-// //             <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-600 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-bold mb-3">
-// //               <FileText size={16} />
-// //               HOMEWORK & TASKS
+// //             <div className="inline-flex items-center gap-2 bg-purple-500/10 text-purple-600 dark:text-purple-300 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
+// //               <FileText size={14} />
+// //               Lesson Practical Tasks
 // //             </div>
-// //             <h1 className="text-3xl md:text-4xl font-black">My Assignments</h1>
-// //             <p className="text-gray-600 dark:text-gray-300 mt-2 max-w-xl">
-// //               Track your pending projects, review tutor feedback, and submit your completed coding work.
+// //             <h1 className="text-3xl md:text-4xl font-black">My Lesson Homework</h1>
+// //             <p className="text-gray-600 dark:text-gray-300 mt-2 max-w-xl text-sm">
+// //               Complete the assignment linked to your lesson, review tutor feedback, and submit your work.
 // //             </p>
 // //           </div>
 // //           <div className="flex items-center gap-3">
-// //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
-// //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pending</p>
-// //               <p className="font-black text-xl text-orange-500">{pendingCount}</p>
+// //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
+// //               <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase">Pending</p>
+// //               <p className="font-black text-lg text-orange-500">{pendingCount}</p>
 // //             </div>
-// //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
-// //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
-// //               <p className="font-black text-xl text-green-500">{completedCount}</p>
+// //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
+// //               <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase">Submitted</p>
+// //               <p className="font-black text-lg text-blue-500">{submittedCount}</p>
+// //             </div>
+// //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-4 py-3 rounded-2xl text-center">
+// //               <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase">Completed</p>
+// //               <p className="font-black text-lg text-emerald-500">{completedCount}</p>
 // //             </div>
 // //           </div>
 // //         </div>
 // //       </div>
 
 // //       {/* Main Grid */}
-// //       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+// //       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 // //         {/* Assignment Details & Submission Form */}
 // //         <div className="lg:col-span-7 space-y-6">
 // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl">
@@ -917,7 +962,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //                     <div
 // //                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
 // //                         selectedAssignment.status === "completed"
-// //                           ? "bg-green-500/20 text-green-400"
+// //                           ? "bg-emerald-500/20 text-emerald-400"
 // //                           : selectedAssignment.status === "submitted"
 // //                           ? "bg-blue-500/20 text-blue-400"
 // //                           : "bg-orange-500/20 text-orange-400"
@@ -932,7 +977,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //                     <span
 // //                       className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${
 // //                         selectedAssignment.status === "completed"
-// //                           ? "bg-green-500/10 text-green-600 border border-green-500/25"
+// //                           ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/25"
 // //                           : selectedAssignment.status === "submitted"
 // //                           ? "bg-blue-500/10 text-blue-600 border border-blue-500/25"
 // //                           : "bg-orange-500/10 text-orange-600 border border-orange-500/25"
@@ -941,34 +986,33 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //                       {selectedAssignment.status || "Pending"}
 // //                     </span>
 // //                   </div>
-// //                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-// //                     <Clock size={16} />
-// //                     <span>
-// //                       {new Date(selectedAssignment.created_at).toLocaleDateString()}
+// //                   {selectedAssignment.course_lessons && (
+// //                     <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full">
+// //                       Lesson: {selectedAssignment.course_lessons.title}
 // //                     </span>
-// //                   </div>
+// //                   )}
 // //                 </div>
 
 // //                 <div>
-// //                   <h2 className="text-2xl md:text-3xl font-black">
+// //                   <h2 className="text-2xl md:text-3xl font-black mt-2">
 // //                     {selectedAssignment.task_name}
 // //                   </h2>
-// //                   <p className="text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
+// //                   <p className="text-gray-600 dark:text-gray-300 mt-3 leading-relaxed text-sm md:text-base">
 // //                     {selectedAssignment.description ||
 // //                       selectedAssignment.instructions ||
-// //                       "Complete the assigned task and paste your project or file link below for your tutor to review."}
+// //                       "Complete this lesson's task and paste your project link below."}
 // //                   </p>
 // //                 </div>
 
 // //                 <div className="border-t border-gray-200 dark:border-white/10 pt-6">
-// //                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+// //                   <h3 className="font-bold text-base mb-4 flex items-center gap-2">
 // //                     <Upload size={18} className="text-purple-500" />
-// //                     Submit Your Work
+// //                     Submit Lesson Work
 // //                   </h3>
 // //                   <form onSubmit={handleSubmitHomework} className="space-y-4">
 // //                     <div>
-// //                       <label className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
-// //                         Project Link (Scratch, GitHub, or File URL)
+// //                       <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+// //                         Project URL (Scratch, GitHub, or File Link)
 // //                       </label>
 // //                       <input
 // //                         type="url"
@@ -976,40 +1020,42 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //                         value={submissionText}
 // //                         onChange={(e) => setSubmissionText(e.target.value)}
 // //                         required
-// //                         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3.5 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+// //                         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3.5 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition text-sm"
 // //                       />
 // //                     </div>
 
-// //                     <button
-// //                       type="submit"
-// //                       disabled={submitting}
-// //                       className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 transition disabled:opacity-50"
-// //                     >
-// //                       {submitting ? (
-// //                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-// //                       ) : (
-// //                         <>
-// //                           <Send size={18} />
-// //                           <span>
-// //                             {selectedAssignment.status === "completed"
-// //                               ? "Resubmit Homework"
-// //                               : selectedAssignment.status === "submitted"
-// //                               ? "Update Submission"
-// //                               : "Submit Homework"}
-// //                           </span>
-// //                         </>
-// //                       )}
-// //                     </button>
+// //                     <div className="flex justify-end pt-2">
+// //                       <button
+// //                         type="submit"
+// //                         disabled={submitting}
+// //                         className="px-6 py-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider shadow-md shadow-purple-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+// //                       >
+// //                         {submitting ? (
+// //                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+// //                         ) : (
+// //                           <>
+// //                             <Send size={16} />
+// //                             <span>
+// //                               {selectedAssignment.status === "completed"
+// //                                 ? "Resubmit Lesson Work"
+// //                                 : selectedAssignment.status === "submitted"
+// //                                 ? "Update Submission"
+// //                                 : "Submit Lesson Task"}
+// //                             </span>
+// //                           </>
+// //                         )}
+// //                       </button>
+// //                     </div>
 // //                   </form>
 // //                 </div>
 
 // //                 {selectedAssignment.tutor_feedback && (
 // //                   <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-500/20 rounded-2xl p-5 mt-6">
-// //                     <h4 className="font-bold text-purple-600 dark:text-purple-300 flex items-center gap-2 mb-2">
+// //                     <h4 className="font-bold text-purple-600 dark:text-purple-300 flex items-center gap-2 mb-2 text-sm">
 // //                       <Sparkles size={16} />
 // //                       Tutor Feedback
 // //                     </h4>
-// //                     <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+// //                     <p className="text-gray-600 dark:text-gray-300 text-xs md:text-sm leading-relaxed">
 // //                       {selectedAssignment.tutor_feedback}
 // //                     </p>
 // //                   </div>
@@ -1017,8 +1063,10 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //               </div>
 // //             ) : (
 // //               <div className="text-center py-20 text-gray-400">
-// //                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
-// //                 <p className="text-lg font-bold">Select an assignment to view details and submit.</p>
+// //                 <FileText size={48} className="mx-auto mb-4 opacity-40 text-purple-500" />
+// //                 <p className="text-base font-bold text-gray-700 dark:text-gray-300">
+// //                   Select a lesson task from the sidebar to view details and submit.
+// //                 </p>
 // //               </div>
 // //             )}
 // //           </div>
@@ -1028,7 +1076,7 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //         <div className="lg:col-span-5 space-y-4">
 // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 shadow-xl">
 // //             <div className="flex items-center justify-between mb-5">
-// //               <h3 className="text-xl font-black">All Assignments</h3>
+// //               <h3 className="text-lg font-black">Lesson Tasks</h3>
 // //               <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold px-3 py-1 rounded-full">
 // //                 {assignments.length} Total
 // //               </span>
@@ -1045,44 +1093,44 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // //                     <div
 // //                       key={item.id}
 // //                       onClick={() => handleSelectAssignment(item)}
-// //                       className={`cursor-pointer rounded-2xl p-4 transition-all border flex items-center justify-between ${
+// //                       className={`cursor-pointer rounded-2xl p-3.5 transition-all border flex items-center justify-between ${
 // //                         isSelected
-// //                           ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-500/20"
-// //                           : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+// //                           ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-500/20"
+// //                           : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-purple-500/30"
 // //                       }`}
 // //                     >
-// //                       <div className="flex items-center gap-3">
+// //                       <div className="flex items-center gap-3 min-w-0 pr-2">
 // //                         <div
-// //                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// //                           className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
 // //                             isCompleted
-// //                               ? "bg-green-500/20 text-green-400"
+// //                               ? "bg-emerald-500/20 text-emerald-400"
 // //                               : isSubmitted
 // //                               ? "bg-blue-500/20 text-blue-400"
 // //                               : "bg-orange-500/20 text-orange-400"
 // //                           }`}
 // //                         >
-// //                           {isCompleted ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+// //                           {isCompleted ? <CheckCircle2 size={18} /> : <Clock size={18} />}
 // //                         </div>
-// //                         <div>
+// //                         <div className="min-w-0">
 // //                           <p
-// //                             className={`font-bold text-sm line-clamp-1 ${
+// //                             className={`font-bold text-xs md:text-sm truncate ${
 // //                               isSelected ? "text-white" : "text-gray-800 dark:text-white"
 // //                             }`}
 // //                           >
 // //                             {item.task_name}
 // //                           </p>
-// //                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
-// //                             {item.status || "Pending"}
+// //                           <p className={`text-[10px] capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
+// //                             {item.course_lessons?.title ? `Lesson: ${item.course_lessons.title}` : (item.status || "Pending")}
 // //                           </p>
 // //                         </div>
 // //                       </div>
-// //                       <ChevronRight size={18} className={isSelected ? "text-white" : "text-gray-400"} />
+// //                       <ChevronRight size={16} className={isSelected ? "text-white" : "text-gray-400"} />
 // //                     </div>
 // //                   );
 // //                 })
 // //               ) : (
-// //                 <div className="text-center py-12 text-gray-400 text-sm">
-// //                   No assignments assigned yet. Keep up the great work!
+// //                 <div className="text-center py-12 text-gray-400 text-xs">
+// //                   No lesson assignments found. Check back soon!
 // //                 </div>
 // //               )}
 // //             </div>
@@ -1094,14 +1142,11 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // }
 // // // import React, { useEffect, useState } from "react";
 // // // import {
-// // //   BookOpen,
 // // //   CheckCircle2,
 // // //   Clock,
 // // //   Upload,
 // // //   FileText,
 // // //   Sparkles,
-// // //   AlertCircle,
-// // //   ExternalLink,
 // // //   ChevronRight,
 // // //   Send,
 // // // } from "lucide-react";
@@ -1113,14 +1158,20 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //   const [selectedAssignment, setSelectedAssignment] = useState(null);
 // // //   const [submissionText, setSubmissionText] = useState("");
 // // //   const [submitting, setSubmitting] = useState(false);
-// // // const pendingCount = assignments.filter(a => a.status === "pending").length;
-// // // const submittedCount = assignments.filter(a => a.status === "submitted").length;
-// // // const completedCount = assignments.filter(a => a.status === "completed").length;
+
 // // //   useEffect(() => {
 // // //     if (userId) {
 // // //       fetchHomework();
 // // //     }
 // // //   }, [userId, courseId]);
+
+// // //   useEffect(() => {
+// // //     if (selectedAssignment) {
+// // //       setSubmissionText(selectedAssignment.submission_link || "");
+// // //     } else {
+// // //       setSubmissionText("");
+// // //     }
+// // //   }, [selectedAssignment]);
 
 // // //   const fetchHomework = async () => {
 // // //     try {
@@ -1132,11 +1183,26 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //         .order("created_at", { ascending: false });
 
 // // //       if (error) throw error;
+      
+// // //       const fetchedAssignments = data || [];
+// // //       setAssignments(fetchedAssignments);
 
+// // //       if (fetchedAssignments.length > 0) {
+// // //         const assignment =
+// // //           fetchedAssignments.find((a) => a.id === selectedAssignment?.id) ||
+// // //           fetchedAssignments[0];
+
+// // //         setSelectedAssignment(assignment);
+// // //       }
+// // //     } catch (err) {
+// // //       console.error("Error fetching homework:", err.message);
+// // //     } finally {
+// // //       setLoading(false);
+// // //     }
+// // //   };
 
 // // //   const handleSelectAssignment = (assignment) => {
 // // //     setSelectedAssignment(assignment);
-// // //     setSubmissionText(assignment.submission_link || "");
 // // //   };
 
 // // //   const handleSubmitHomework = async (e) => {
@@ -1145,51 +1211,47 @@ export default function StudentHomeworkView({ userId, courseId }) {
 
 // // //     try {
 // // //       setSubmitting(true);
+// // //       const timestamp = new Date().toISOString();
+      
 // // //       const { error } = await supabase
 // // //         .from("student_assignments")
 // // //         .update({
 // // //           submission_link: submissionText,
-// // //          status: "submitted", 
-// // //           // updated_at: new Date(),
-// // //           updated_at: new Date().toISOString(),
-// // // submitted_at: new Date().toISOString(),
+// // //           status: "submitted",
+// // //           updated_at: timestamp,
+// // //           submitted_at: timestamp,
 // // //         })
 // // //         .eq("id", selectedAssignment.id);
 
 // // //       if (error) throw error;
-// // // setAssignments((prev) =>
-// // //   prev.map((a) =>
-// // //     a.id === selectedAssignment.id
-// // //       ? {
-// // //           ...a,
-// // //           submission_link: submissionText,
-// // //           status: "submitted",
-// // //           submitted_at: new Date().toISOString(),
-// // //         }
-// // //       : a
-// // //   )
-// // // );
 
-// // // setSelectedAssignment((prev) => ({
-// // //   ...prev,
-// // //   submission_link: submissionText,
-// // //   status: "submitted",
-// // //   submitted_at: new Date().toISOString(),
-// // // }));
-// // //       // Update local state
-// // //       setAssignments(
-// // //         assignments.map((a) =>
+// // //       // Update local state smoothly with updated_at included
+// // //       setAssignments((prev) =>
+// // //         prev.map((a) =>
 // // //           a.id === selectedAssignment.id
-// // //             // ? { ...a, submission_link: submissionText, status: "completed" }
-// // //           ? {
-// // //     ...a,
-// // //     submission_link: submissionText,
-// // //     status: "submitted",
-// // //     submitted_at: new Date().toISOString(),
-// // //   }
+// // //             ? {
+// // //                 ...a,
+// // //                 submission_link: submissionText,
+// // //                 status: "submitted",
+// // //                 submitted_at: timestamp,
+// // //                 updated_at: timestamp,
+// // //               }
 // // //             : a
 // // //         )
 // // //       );
+
+// // //       setSelectedAssignment((prev) =>
+// // //         prev
+// // //           ? {
+// // //               ...prev,
+// // //               submission_link: submissionText,
+// // //               status: "submitted",
+// // //               submitted_at: timestamp,
+// // //               updated_at: timestamp,
+// // //             }
+// // //           : null
+// // //       );
+
 // // //       alert("Homework submitted successfully! 🎉");
 // // //     } catch (err) {
 // // //       console.error("Error submitting homework:", err.message);
@@ -1198,22 +1260,30 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //       setSubmitting(false);
 // // //     }
 // // //   };
-  
 
 // // //   if (loading) {
 // // //     return (
 // // //       <div className="min-h-[60vh] flex items-center justify-center">
-// // //         <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-[30px] p-8 text-center">
+// // //         <div className="bg-white/15 backdrop-blur-xl border border-white/10 rounded-[30px] p-8 text-center shadow-2xl">
 // // //           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-5" />
 // // //           <h2 className="text-white text-xl font-bold">Loading Homework...</h2>
-// // //           <p className="text-gray-400 mt-2">Fetching your assignments 🚀</p>
+// // //           <p className="text-gray-300 mt-2">Fetching your assignments 🚀</p>
 // // //         </div>
 // // //       </div>
 // // //     );
 // // //   }
 
-// // //   const completedCount = assignments.filter((a) => a.status === "completed").length;
-// // //   const pendingCount = assignments.filter((a) => a.status === "pending").length;
+// // //   const pendingCount = assignments.filter(
+// // //     (a) => a.status === "pending"
+// // //   ).length;
+
+// // //   const submittedCount = assignments.filter(
+// // //     (a) => a.status === "submitted"
+// // //   ).length;
+
+// // //   const completedCount = assignments.filter(
+// // //     (a) => a.status === "completed"
+// // //   ).length;
 
 // // //   return (
 // // //     <div className="space-y-6 p-4 md:p-6 text-gray-900 dark:text-white">
@@ -1237,6 +1307,10 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //               <p className="font-black text-xl text-orange-500">{pendingCount}</p>
 // // //             </div>
 // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Submitted</p>
+// // //               <p className="font-black text-xl text-blue-500">{submittedCount}</p>
+// // //             </div>
+// // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
 // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
 // // //               <p className="font-black text-xl text-green-500">{completedCount}</p>
 // // //             </div>
@@ -1252,35 +1326,34 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //             {selectedAssignment ? (
 // // //               <div className="space-y-6">
 // // //                 <div className="flex items-center justify-between flex-wrap gap-3">
-// // //                   <span
-// // //                     className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${
-// // //                       // selectedAssignment.status === "completed"
-// // //                       //   ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
-// // //                       //   : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-// // //                       selectedAssignment.status === "completed"
-// // //   ? "bg-green-500/10 text-green-600"
-// // //   : selectedAssignment.status === "submitted"
-// // //   ? "bg-blue-500/10 text-blue-600"
-// // //   : "bg-orange-500/10 text-orange-600"
-// // //                     }`}
+// // //                   <div className="flex items-center gap-3">
 // // //                     <div
-// // //   className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-// // //     isCompleted
-// // //       ? "bg-green-500/20 text-green-400"
-// // //       : isSubmitted
-// // //       ? "bg-blue-500/20 text-blue-400"
-// // //       : "bg-orange-500/20 text-orange-400"
-// // //   }`}
-// // // >
-// // //   {isCompleted ? (
-// // //     <CheckCircle2 size={20} />
-// // //   ) : (
-// // //     <Clock size={20} />
-// // //   )}
-// // // </div>
-// // //                   >
-// // //                     {selectedAssignment.status || "Pending"}
-// // //                   </span>
+// // //                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// // //                         selectedAssignment.status === "completed"
+// // //                           ? "bg-green-500/20 text-green-400"
+// // //                           : selectedAssignment.status === "submitted"
+// // //                           ? "bg-blue-500/20 text-blue-400"
+// // //                           : "bg-orange-500/20 text-orange-400"
+// // //                       }`}
+// // //                     >
+// // //                       {selectedAssignment.status === "completed" ? (
+// // //                         <CheckCircle2 size={20} />
+// // //                       ) : (
+// // //                         <Clock size={20} />
+// // //                       )}
+// // //                     </div>
+// // //                     <span
+// // //                       className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${
+// // //                         selectedAssignment.status === "completed"
+// // //                           ? "bg-green-500/10 text-green-600 border border-green-500/25"
+// // //                           : selectedAssignment.status === "submitted"
+// // //                           ? "bg-blue-500/10 text-blue-600 border border-blue-500/25"
+// // //                           : "bg-orange-500/10 text-orange-600 border border-orange-500/25"
+// // //                       }`}
+// // //                     >
+// // //                       {selectedAssignment.status || "Pending"}
+// // //                     </span>
+// // //                   </div>
 // // //                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
 // // //                     <Clock size={16} />
 // // //                     <span>
@@ -1330,14 +1403,13 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //                       ) : (
 // // //                         <>
 // // //                           <Send size={18} />
-// // //                           <span>{
-// // //                           // selectedAssignment.status === "completed" ? "Update Submission" : "Submit Homework"
-// // //                           selectedAssignment.status === "completed"
-// // //   ? "Resubmit Homework"
-// // //   : selectedAssignment.status === "submitted"
-// // //   ? "Update Submission"
-// // //   : "Submit Homework"
-// // //                         }</span>
+// // //                           <span>
+// // //                             {selectedAssignment.status === "completed"
+// // //                               ? "Resubmit Homework"
+// // //                               : selectedAssignment.status === "submitted"
+// // //                               ? "Update Submission"
+// // //                               : "Submit Homework"}
+// // //                           </span>
 // // //                         </>
 // // //                       )}
 // // //                     </button>
@@ -1380,8 +1452,8 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //                 assignments.map((item) => {
 // // //                   const isSelected = selectedAssignment?.id === item.id;
 // // //                   const isCompleted = item.status === "completed";
-// // //                   // const isCompleted = item.status === "completed";
-// // // const isSubmitted = item.status === "submitted";
+// // //                   const isSubmitted = item.status === "submitted";
+
 // // //                   return (
 // // //                     <div
 // // //                       key={item.id}
@@ -1397,6 +1469,8 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
 // // //                             isCompleted
 // // //                               ? "bg-green-500/20 text-green-400"
+// // //                               : isSubmitted
+// // //                               ? "bg-blue-500/20 text-blue-400"
 // // //                               : "bg-orange-500/20 text-orange-400"
 // // //                           }`}
 // // //                         >
@@ -1411,7 +1485,9 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //                             {item.task_name}
 // // //                           </p>
 // // //                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
-// // //                             {item.status || "Pending"}
+// // //                             {item.status
+// // //                               ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
+// // //                               : "Pending"}
 // // //                           </p>
 // // //                         </div>
 // // //                       </div>
@@ -1431,3 +1507,1069 @@ export default function StudentHomeworkView({ userId, courseId }) {
 // // //     </div>
 // // //   );
 // // // }
+// // // // import React, { useEffect, useState } from "react";
+// // // // import {
+// // // //   BookOpen,
+// // // //   CheckCircle2,
+// // // //   Clock,
+// // // //   Upload,
+// // // //   FileText,
+// // // //   Sparkles,
+// // // //   ChevronRight,
+// // // //   Send,
+// // // // } from "lucide-react";
+// // // // import { supabase } from "../../../supabase";
+
+// // // // export default function StudentHomeworkView({ userId, courseId }) {
+// // // //   const [loading, setLoading] = useState(true);
+// // // //   const [assignments, setAssignments] = useState([]);
+// // // //   const [selectedAssignment, setSelectedAssignment] = useState(null);
+// // // //   const [submissionText, setSubmissionText] = useState("");
+// // // //   const [submitting, setSubmitting] = useState(false);
+
+// // // //   useEffect(() => {
+// // // //     if (userId) {
+// // // //       fetchHomework();
+// // // //     }
+// // // //   }, [userId, courseId]);
+
+// // // //   const fetchHomework = async () => {
+// // // //     try {
+// // // //       setLoading(true);
+// // // //       const { data, error } = await supabase
+// // // //         .from("student_assignments")
+// // // //         .select("*")
+// // // //         .eq("student_id", userId)
+// // // //         .order("created_at", { ascending: false });
+
+// // // //       if (error) throw error;
+      
+// // // //       const fetchedAssignments = data || [];
+// // // //       setAssignments(fetchedAssignments);
+
+// // // //       if (fetchedAssignments.length > 0) {
+// // // //         const assignment =
+// // // //           fetchedAssignments.find((a) => a.id === selectedAssignment?.id) ||
+// // // //           fetchedAssignments[0];
+
+// // // //         setSelectedAssignment(assignment);
+// // // //         // setSubmissionText(assignment.submission_link || "");
+// // // // //         useEffect(() => {
+// // // // //   if (selectedAssignment) {
+// // // // //     setSubmissionText(selectedAssignment.submission_link || "");
+// // // // //   }
+// // // // // }, [selectedAssignment]);
+// // // // //       }
+// // // //         useEffect(() => {
+// // // //   if (selectedAssignment) {
+// // // //     setSubmissionText(selectedAssignment.submission_link || "");
+// // // //   } else {
+// // // //     setSubmissionText("");
+// // // //   }
+// // // // }, [selectedAssignment]);
+// // // //     } catch (err) {
+// // // //       console.error("Error fetching homework:", err.message);
+// // // //     } finally {
+// // // //       setLoading(false);
+// // // //     }
+// // // //   };
+
+// // // //   const handleSelectAssignment = (assignment) => {
+// // // //     setSelectedAssignment(assignment);
+// // // //     // setSubmissionText(assignment.submission_link || "");
+// // // //   };
+
+// // // //   const handleSubmitHomework = async (e) => {
+// // // //     e.preventDefault();
+// // // //     if (!selectedAssignment) return;
+
+// // // //     try {
+// // // //       setSubmitting(true);
+// // // //       const timestamp = new Date().toISOString();
+      
+// // // //       const { error } = await supabase
+// // // //         .from("student_assignments")
+// // // //         .update({
+// // // //           submission_link: submissionText,
+// // // //           status: "submitted",
+// // // //           updated_at: timestamp,
+// // // //           submitted_at: timestamp,
+// // // //         })
+// // // //         .eq("id", selectedAssignment.id);
+
+// // // //       if (error) throw error;
+
+// // // //       // Update local state smoothly
+// // // //       setAssignments((prev) =>
+// // // //         prev.map((a) =>
+// // // //           a.id === selectedAssignment.id
+// // // //             ? {
+// // // //                 ...a,
+// // // //                 submission_link: submissionText,
+// // // //                 status: "submitted",
+// // // //                 submitted_at: timestamp,
+// // // //               }
+// // // //             : a
+// // // //         )
+// // // //       );
+
+// // // //       setSelectedAssignment((prev) => ({
+// // // //         ...prev,
+// // // //         submission_link: submissionText,
+// // // //         status: "submitted",
+// // // //         submitted_at: timestamp,
+// // // //       }));
+
+// // // //       alert("Homework submitted successfully! 🎉");
+// // // //     } catch (err) {
+// // // //       console.error("Error submitting homework:", err.message);
+// // // //       alert("Failed to submit homework. Please try again.");
+// // // //     } finally {
+// // // //       setSubmitting(false);
+// // // //     }
+// // // //   };
+
+// // // //   if (loading) {
+// // // //     return (
+// // // //       <div className="min-h-[60vh] flex items-center justify-center">
+// // // //         <div className="bg-white/15 backdrop-blur-xl border border-white/10 rounded-[30px] p-8 text-center shadow-2xl">
+// // // //           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-5" />
+// // // //           <h2 className="text-white text-xl font-bold">Loading Homework...</h2>
+// // // //           <p className="text-gray-300 mt-2">Fetching your assignments 🚀</p>
+// // // //         </div>
+// // // //       </div>
+// // // //     );
+// // // //   }
+
+// // // //   const pendingCount = assignments.filter(
+// // // //     (a) => a.status === "pending"
+// // // //   ).length;
+
+// // // //   const submittedCount = assignments.filter(
+// // // //     (a) => a.status === "submitted"
+// // // //   ).length;
+
+// // // //   const completedCount = assignments.filter(
+// // // //     (a) => a.status === "completed"
+// // // //   ).length;
+
+// // // //   return (
+// // // //     <div className="space-y-6 p-4 md:p-6 text-gray-900 dark:text-white">
+// // // //       {/* Header Banner */}
+// // // //       <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl relative overflow-hidden">
+// // // //         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 blur-[120px] pointer-events-none" />
+// // // //         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+// // // //           <div>
+// // // //             <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-600 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-bold mb-3">
+// // // //               <FileText size={16} />
+// // // //               HOMEWORK & TASKS
+// // // //             </div>
+// // // //             <h1 className="text-3xl md:text-4xl font-black">My Assignments</h1>
+// // // //             <p className="text-gray-600 dark:text-gray-300 mt-2 max-w-xl">
+// // // //               Track your pending projects, review tutor feedback, and submit your completed coding work.
+// // // //             </p>
+// // // //           </div>
+// // // //           <div className="flex items-center gap-3">
+// // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pending</p>
+// // // //               <p className="font-black text-xl text-orange-500">{pendingCount}</p>
+// // // //             </div>
+// // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Submitted</p>
+// // // //               <p className="font-black text-xl text-blue-500">{submittedCount}</p>
+// // // //             </div>
+// // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
+// // // //               <p className="font-black text-xl text-green-500">{completedCount}</p>
+// // // //             </div>
+// // // //           </div>
+// // // //         </div>
+// // // //       </div>
+
+// // // //       {/* Main Grid */}
+// // // //       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+// // // //         {/* Assignment Details & Submission Form */}
+// // // //         <div className="lg:col-span-7 space-y-6">
+// // // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl">
+// // // //             {selectedAssignment ? (
+// // // //               <div className="space-y-6">
+// // // //                 <div className="flex items-center justify-between flex-wrap gap-3">
+// // // //                   <div className="flex items-center gap-3">
+// // // //                     <div
+// // // //                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// // // //                         selectedAssignment.status === "completed"
+// // // //                           ? "bg-green-500/20 text-green-400"
+// // // //                           : selectedAssignment.status === "submitted"
+// // // //                           ? "bg-blue-500/20 text-blue-400"
+// // // //                           : "bg-orange-500/20 text-orange-400"
+// // // //                       }`}
+// // // //                     >
+// // // //                       {selectedAssignment.status === "completed" ? (
+// // // //                         <CheckCircle2 size={20} />
+// // // //                       ) : (
+// // // //                         <Clock size={20} />
+// // // //                       )}
+// // // //                     </div>
+// // // //                     <span
+// // // //                       className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${
+// // // //                         selectedAssignment.status === "completed"
+// // // //                           ? "bg-green-500/10 text-green-600 border border-green-500/25"
+// // // //                           : selectedAssignment.status === "submitted"
+// // // //                           ? "bg-blue-500/10 text-blue-600 border border-blue-500/25"
+// // // //                           : "bg-orange-500/10 text-orange-600 border border-orange-500/25"
+// // // //                       }`}
+// // // //                     >
+// // // //                       {selectedAssignment.status || "Pending"}
+// // // //                     </span>
+// // // //                   </div>
+// // // //                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+// // // //                     <Clock size={16} />
+// // // //                     <span>
+// // // //                       {new Date(selectedAssignment.created_at).toLocaleDateString()}
+// // // //                     </span>
+// // // //                   </div>
+// // // //                 </div>
+
+// // // //                 <div>
+// // // //                   <h2 className="text-2xl md:text-3xl font-black">
+// // // //                     {selectedAssignment.task_name}
+// // // //                   </h2>
+// // // //                   <p className="text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
+// // // //                     {selectedAssignment.description ||
+// // // //                       selectedAssignment.instructions ||
+// // // //                       "Complete the assigned task and paste your project or file link below for your tutor to review."}
+// // // //                   </p>
+// // // //                 </div>
+
+// // // //                 <div className="border-t border-gray-200 dark:border-white/10 pt-6">
+// // // //                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+// // // //                     <Upload size={18} className="text-purple-500" />
+// // // //                     Submit Your Work
+// // // //                   </h3>
+// // // //                   <form onSubmit={handleSubmitHomework} className="space-y-4">
+// // // //                     <div>
+// // // //                       <label className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
+// // // //                         Project Link (Scratch, GitHub, or File URL)
+// // // //                       </label>
+// // // //                       <input
+// // // //                         type="url"
+// // // //                         placeholder="https://scratch.mit.edu/projects/... or https://github.com/..."
+// // // //                         value={submissionText}
+// // // //                         onChange={(e) => setSubmissionText(e.target.value)}
+// // // //                         required
+// // // //                         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3.5 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+// // // //                       />
+// // // //                     </div>
+
+// // // //                     <button
+// // // //                       type="submit"
+// // // //                       disabled={submitting}
+// // // //                       className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 transition disabled:opacity-50"
+// // // //                     >
+// // // //                       {submitting ? (
+// // // //                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+// // // //                       ) : (
+// // // //                         <>
+// // // //                           <Send size={18} />
+// // // //                           <span>
+// // // //                             {selectedAssignment.status === "completed"
+// // // //                               ? "Resubmit Homework"
+// // // //                               : selectedAssignment.status === "submitted"
+// // // //                               ? "Update Submission"
+// // // //                               : "Submit Homework"}
+// // // //                           </span>
+// // // //                         </>
+// // // //                       )}
+// // // //                     </button>
+// // // //                   </form>
+// // // //                 </div>
+
+// // // //                 {selectedAssignment.tutor_feedback && (
+// // // //                   <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-500/20 rounded-2xl p-5 mt-6">
+// // // //                     <h4 className="font-bold text-purple-600 dark:text-purple-300 flex items-center gap-2 mb-2">
+// // // //                       <Sparkles size={16} />
+// // // //                       Tutor Feedback
+// // // //                     </h4>
+// // // //                     <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+// // // //                       {selectedAssignment.tutor_feedback}
+// // // //                     </p>
+// // // //                   </div>
+// // // //                 )}
+// // // //               </div>
+// // // //             ) : (
+// // // //               <div className="text-center py-20 text-gray-400">
+// // // //                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
+// // // //                 <p className="text-lg font-bold">Select an assignment to view details and submit.</p>
+// // // //               </div>
+// // // //             )}
+// // // //           </div>
+// // // //         </div>
+
+// // // //         {/* Assignments List Sidebar */}
+// // // //         <div className="lg:col-span-5 space-y-4">
+// // // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 shadow-xl">
+// // // //             <div className="flex items-center justify-between mb-5">
+// // // //               <h3 className="text-xl font-black">All Assignments</h3>
+// // // //               <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold px-3 py-1 rounded-full">
+// // // //                 {assignments.length} Total
+// // // //               </span>
+// // // //             </div>
+
+// // // //             <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+// // // //               {assignments.length > 0 ? (
+// // // //                 assignments.map((item) => {
+// // // //                   const isSelected = selectedAssignment?.id === item.id;
+// // // //                   const isCompleted = item.status === "completed";
+// // // //                   const isSubmitted = item.status === "submitted";
+
+// // // //                   return (
+// // // //                     <div
+// // // //                       key={item.id}
+// // // //                       onClick={() => handleSelectAssignment(item)}
+// // // //                       className={`cursor-pointer rounded-2xl p-4 transition-all border flex items-center justify-between ${
+// // // //                         isSelected
+// // // //                           ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-500/20"
+// // // //                           : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+// // // //                       }`}
+// // // //                     >
+// // // //                       <div className="flex items-center gap-3">
+// // // //                         <div
+// // // //                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// // // //                             isCompleted
+// // // //                               ? "bg-green-500/20 text-green-400"
+// // // //                               : isSubmitted
+// // // //                               ? "bg-blue-500/20 text-blue-400"
+// // // //                               : "bg-orange-500/20 text-orange-400"
+// // // //                           }`}
+// // // //                         >
+// // // //                           {isCompleted ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+// // // //                         </div>
+// // // //                         <div>
+// // // //                           <p
+// // // //                             className={`font-bold text-sm line-clamp-1 ${
+// // // //                               isSelected ? "text-white" : "text-gray-800 dark:text-white"
+// // // //                             }`}
+// // // //                           >
+// // // //                             {item.task_name}
+// // // //                           </p>
+// // // //                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
+// // // //                             // {item.status || "Pending"}
+// // // //                           {item.status
+// // // //   ? item.status.charAt(0).toUpperCase() + item.status.slice(1)
+// // // //   : "Pending"}
+// // // //                           </p>
+// // // //                         </div>
+// // // //                       </div>
+// // // //                       <ChevronRight size={18} className={isSelected ? "text-white" : "text-gray-400"} />
+// // // //                     </div>
+// // // //                   );
+// // // //                 })
+// // // //               ) : (
+// // // //                 <div className="text-center py-12 text-gray-400 text-sm">
+// // // //                   No assignments assigned yet. Keep up the great work!
+// // // //                 </div>
+// // // //               )}
+// // // //             </div>
+// // // //           </div>
+// // // //         </div>
+// // // //       </div>
+// // // //     </div>
+// // // //   );
+// // // // }
+// // // // // import React, { useEffect, useState } from "react";
+// // // // // import {
+// // // // //   BookOpen,
+// // // // //   CheckCircle2,
+// // // // //   Clock,
+// // // // //   Upload,
+// // // // //   FileText,
+// // // // //   Sparkles,
+// // // // //   ChevronRight,
+// // // // //   Send,
+// // // // // } from "lucide-react";
+// // // // // import { supabase } from "../../../supabase";
+
+// // // // // export default function StudentHomeworkView({ userId, courseId }) {
+// // // // //   const [loading, setLoading] = useState(true);
+// // // // //   const [assignments, setAssignments] = useState([]);
+// // // // //   const [selectedAssignment, setSelectedAssignment] = useState(null);
+// // // // //   const [submissionText, setSubmissionText] = useState("");
+// // // // //   const [submitting, setSubmitting] = useState(false);
+
+// // // // //   useEffect(() => {
+// // // // //     if (userId) {
+// // // // //       fetchHomework();
+// // // // //     }
+// // // // //   }, [userId, courseId]);
+
+// // // // //   const fetchHomework = async () => {
+// // // // //     try {
+// // // // //       setLoading(true);
+// // // // //       const { data, error } = await supabase
+// // // // //         .from("student_assignments")
+// // // // //         .select("*")
+// // // // //         .eq("student_id", userId)
+// // // // //         .order("created_at", { ascending: false });
+
+// // // // //       if (error) throw error;
+      
+// // // // //       const fetchedAssignments = data || [];
+// // // // //       setAssignments(fetchedAssignments);
+
+// // // // //       // Automatically select the first assignment if none is selected, or keep selection updated
+// // // // //       // if (fetchedAssignments.length > 0) {
+// // // // //       //   setSelectedAssignment((prev) => {
+// // // // //       //     if (!prev) return fetchedAssignments[0];
+// // // // //       //     return fetchedAssignments.find((a) => a.id === prev.id) || fetchedAssignments[0];
+// // // // //       //   });
+// // // // //       // }
+// // // // //       if (fetchedAssignments.length > 0) {
+// // // // //   const assignment =
+// // // // //     fetchedAssignments.find((a) => a.id === selectedAssignment?.id) ||
+// // // // //     fetchedAssignments[0];
+
+// // // // //   setSelectedAssignment(assignment);
+// // // // //   setSubmissionText(assignment.submission_link || "");
+// // // // // }
+// // // // //     } catch (err) {
+// // // // //       console.error("Error fetching homework:", err.message);
+// // // // //     } finally {
+// // // // //       setLoading(false);
+// // // // //     }
+// // // // //   };
+
+// // // // //   const handleSelectAssignment = (assignment) => {
+// // // // //     setSelectedAssignment(assignment);
+// // // // //     setSubmissionText(assignment.submission_link || "");
+// // // // //   };
+
+// // // // //   const handleSubmitHomework = async (e) => {
+// // // // //     e.preventDefault();
+// // // // //     if (!selectedAssignment) return;
+
+// // // // //     try {
+// // // // //       setSubmitting(true);
+// // // // //       const timestamp = new Date().toISOString();
+      
+// // // // //       const { error } = await supabase
+// // // // //         .from("student_assignments")
+// // // // //         .update({
+// // // // //           submission_link: submissionText,
+// // // // //           status: "submitted",
+// // // // //           updated_at: timestamp,
+// // // // //           submitted_at: timestamp,
+// // // // //         })
+// // // // //         .eq("id", selectedAssignment.id);
+
+// // // // //       if (error) throw error;
+
+// // // // //       // Update local state smoothly
+// // // // //       setAssignments((prev) =>
+// // // // //         prev.map((a) =>
+// // // // //           a.id === selectedAssignment.id
+// // // // //             ? {
+// // // // //                 ...a,
+// // // // //                 submission_link: submissionText,
+// // // // //                 status: "submitted",
+// // // // //                 submitted_at: timestamp,
+// // // // //               }
+// // // // //             : a
+// // // // //         )
+// // // // //       );
+
+// // // // //       setSelectedAssignment((prev) => ({
+// // // // //         ...prev,
+// // // // //         submission_link: submissionText,
+// // // // //         status: "submitted",
+// // // // //         submitted_at: timestamp,
+// // // // //       }));
+
+// // // // //       alert("Homework submitted successfully! 🎉");
+// // // // //     } catch (err) {
+// // // // //       console.error("Error submitting homework:", err.message);
+// // // // //       alert("Failed to submit homework. Please try again.");
+// // // // //     } finally {
+// // // // //       setSubmitting(false);
+// // // // //     }
+// // // // //   };
+
+// // // // //   if (loading) {
+// // // // //     return (
+// // // // //       <div className="min-h-[60vh] flex items-center justify-center">
+// // // // //         <div className="bg-white/15 backdrop-blur-xl border border-white/10 rounded-[30px] p-8 text-center shadow-2xl">
+// // // // //           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-5" />
+// // // // //           <h2 className="text-white text-xl font-bold">Loading Homework...</h2>
+// // // // //           <p className="text-gray-300 mt-2">Fetching your assignments 🚀</p>
+// // // // //         </div>
+// // // // //       </div>
+// // // // //     );
+// // // // //   }
+
+// // // // //   const completedCount = assignments.filter((a) => a.status === "completed").length;
+// // // // //   // const pendingCount = assignments.filter((a) => a.status === "pending" || a.status === "submitted").length;
+// // // // // const pendingCount = assignments.filter(
+// // // // //   a => a.status === "pending"
+// // // // // ).length;
+
+// // // // // const submittedCount = assignments.filter(
+// // // // //   a => a.status === "submitted"
+// // // // // ).length;
+
+// // // // // const completedCount = assignments.filter(
+// // // // //   a => a.status === "completed"
+// // // // // ).length;
+// // // // //   return (
+// // // // //     <div className="space-y-6 p-4 md:p-6 text-gray-900 dark:text-white">
+// // // // //       {/* Header Banner */}
+// // // // //       <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl relative overflow-hidden">
+// // // // //         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 blur-[120px] pointer-events-none" />
+// // // // //         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+// // // // //           <div>
+// // // // //             <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-600 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-bold mb-3">
+// // // // //               <FileText size={16} />
+// // // // //               HOMEWORK & TASKS
+// // // // //             </div>
+// // // // //             <h1 className="text-3xl md:text-4xl font-black">My Assignments</h1>
+// // // // //             <p className="text-gray-600 dark:text-gray-300 mt-2 max-w-xl">
+// // // // //               Track your pending projects, review tutor feedback, and submit your completed coding work.
+// // // // //             </p>
+// // // // //           </div>
+// // // // //           <div className="flex items-center gap-3">
+// // // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pending</p>
+// // // // //               <p className="font-black text-xl text-orange-500">{pendingCount}</p>
+// // // // //             </div>
+// // // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
+// // // // //               <p className="font-black text-xl text-green-500">{completedCount}</p>
+// // // // //             </div>
+// // // // //           </div>
+// // // // //         </div>
+// // // // //       </div>
+
+// // // // //       {/* Main Grid */}
+// // // // //       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+// // // // //         {/* Assignment Details & Submission Form */}
+// // // // //         <div className="lg:col-span-7 space-y-6">
+// // // // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl">
+// // // // //             {selectedAssignment ? (
+// // // // //               <div className="space-y-6">
+// // // // //                 <div className="flex items-center justify-between flex-wrap gap-3">
+// // // // //                   <div className="flex items-center gap-3">
+// // // // //                     <div
+// // // // //                       className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// // // // //                         selectedAssignment.status === "completed"
+// // // // //                           ? "bg-green-500/20 text-green-400"
+// // // // //                           : selectedAssignment.status === "submitted"
+// // // // //                           ? "bg-blue-500/20 text-blue-400"
+// // // // //                           : "bg-orange-500/20 text-orange-400"
+// // // // //                       }`}
+// // // // //                     >
+// // // // //                       {selectedAssignment.status === "completed" ? (
+// // // // //                         <CheckCircle2 size={20} />
+// // // // //                       ) : (
+// // // // //                         <Clock size={20} />
+// // // // //                       )}
+// // // // //                     </div>
+// // // // //                     <span
+// // // // //                       className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${
+// // // // //                         selectedAssignment.status === "completed"
+// // // // //                           ? "bg-green-500/10 text-green-600 border border-green-500/25"
+// // // // //                           : selectedAssignment.status === "submitted"
+// // // // //                           ? "bg-blue-500/10 text-blue-600 border border-blue-500/25"
+// // // // //                           : "bg-orange-500/10 text-orange-600 border border-orange-500/25"
+// // // // //                       }`}
+// // // // //                     >
+// // // // //                       {selectedAssignment.status || "Pending"}
+// // // // //                     </span>
+// // // // //                   </div>
+// // // // //                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+// // // // //                     <Clock size={16} />
+// // // // //                     <span>
+// // // // //                       {new Date(selectedAssignment.created_at).toLocaleDateString()}
+// // // // //                     </span>
+// // // // //                   </div>
+// // // // //                 </div>
+
+// // // // //                 <div>
+// // // // //                   <h2 className="text-2xl md:text-3xl font-black">
+// // // // //                     {selectedAssignment.task_name}
+// // // // //                   </h2>
+// // // // //                   <p className="text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
+// // // // //                     {selectedAssignment.description ||
+// // // // //                       selectedAssignment.instructions ||
+// // // // //                       "Complete the assigned task and paste your project or file link below for your tutor to review."}
+// // // // //                   </p>
+// // // // //                 </div>
+
+// // // // //                 <div className="border-t border-gray-200 dark:border-white/10 pt-6">
+// // // // //                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+// // // // //                     <Upload size={18} className="text-purple-500" />
+// // // // //                     Submit Your Work
+// // // // //                   </h3>
+// // // // //                   <form onSubmit={handleSubmitHomework} className="space-y-4">
+// // // // //                     <div>
+// // // // //                       <label className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
+// // // // //                         Project Link (Scratch, GitHub, or File URL)
+// // // // //                       </label>
+// // // // //                       <input
+// // // // //                         type="url"
+// // // // //                         placeholder="https://scratch.mit.edu/projects/... or https://github.com/..."
+// // // // //                         value={submissionText}
+// // // // //                         onChange={(e) => setSubmissionText(e.target.value)}
+// // // // //                         required
+// // // // //                         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3.5 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+// // // // //                       />
+// // // // //                     </div>
+
+// // // // //                     <button
+// // // // //                       type="submit"
+// // // // //                       disabled={submitting}
+// // // // //                       className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 transition disabled:opacity-50"
+// // // // //                     >
+// // // // //                       {submitting ? (
+// // // // //                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+// // // // //                       ) : (
+// // // // //                         <>
+// // // // //                           <Send size={18} />
+// // // // //                           <span>
+// // // // //                             {selectedAssignment.status === "completed"
+// // // // //                               ? "Resubmit Homework"
+// // // // //                               : selectedAssignment.status === "submitted"
+// // // // //                               ? "Update Submission"
+// // // // //                               : "Submit Homework"}
+// // // // //                           </span>
+// // // // //                         </>
+// // // // //                       )}
+// // // // //                     </button>
+// // // // //                   </form>
+// // // // //                 </div>
+
+// // // // //                 {selectedAssignment.tutor_feedback && (
+// // // // //                   <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-500/20 rounded-2xl p-5 mt-6">
+// // // // //                     <h4 className="font-bold text-purple-600 dark:text-purple-300 flex items-center gap-2 mb-2">
+// // // // //                       <Sparkles size={16} />
+// // // // //                       Tutor Feedback
+// // // // //                     </h4>
+// // // // //                     <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+// // // // //                       {selectedAssignment.tutor_feedback}
+// // // // //                     </p>
+// // // // //                   </div>
+// // // // //                 )}
+// // // // //               </div>
+// // // // //             ) : (
+// // // // //               <div className="text-center py-20 text-gray-400">
+// // // // //                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
+// // // // //                 <p className="text-lg font-bold">Select an assignment to view details and submit.</p>
+// // // // //               </div>
+// // // // //             )}
+// // // // //           </div>
+// // // // //         </div>
+
+// // // // //         {/* Assignments List Sidebar */}
+// // // // //         <div className="lg:col-span-5 space-y-4">
+// // // // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 shadow-xl">
+// // // // //             <div className="flex items-center justify-between mb-5">
+// // // // //               <h3 className="text-xl font-black">All Assignments</h3>
+// // // // //               <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold px-3 py-1 rounded-full">
+// // // // //                 {assignments.length} Total
+// // // // //               </span>
+// // // // //             </div>
+
+// // // // //             <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+// // // // //               {assignments.length > 0 ? (
+// // // // //                 assignments.map((item) => {
+// // // // //                   const isSelected = selectedAssignment?.id === item.id;
+// // // // //                   const isCompleted = item.status === "completed";
+// // // // //                   const isSubmitted = item.status === "submitted";
+
+// // // // //                   return (
+// // // // //                     <div
+// // // // //                       key={item.id}
+// // // // //                       onClick={() => handleSelectAssignment(item)}
+// // // // //                       className={`cursor-pointer rounded-2xl p-4 transition-all border flex items-center justify-between ${
+// // // // //                         isSelected
+// // // // //                           ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-500/20"
+// // // // //                           : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+// // // // //                       }`}
+// // // // //                     >
+// // // // //                       <div className="flex items-center gap-3">
+// // // // //                         <div
+// // // // //                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// // // // //                             isCompleted
+// // // // //                               ? "bg-green-500/20 text-green-400"
+// // // // //                               : isSubmitted
+// // // // //                               ? "bg-blue-500/20 text-blue-400"
+// // // // //                               : "bg-orange-500/20 text-orange-400"
+// // // // //                           }`}
+// // // // //                         >
+// // // // //                           {isCompleted ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+// // // // //                         </div>
+// // // // //                         <div>
+// // // // //                           <p
+// // // // //                             className={`font-bold text-sm line-clamp-1 ${
+// // // // //                               isSelected ? "text-white" : "text-gray-800 dark:text-white"
+// // // // //                             }`}
+// // // // //                           >
+// // // // //                             {item.task_name}
+// // // // //                           </p>
+// // // // //                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
+// // // // //                             {item.status || "Pending"}
+// // // // //                           </p>
+// // // // //                         </div>
+// // // // //                       </div>
+// // // // //                       <ChevronRight size={18} className={isSelected ? "text-white" : "text-gray-400"} />
+// // // // //                     </div>
+// // // // //                   );
+// // // // //                 })
+// // // // //               ) : (
+// // // // //                 <div className="text-center py-12 text-gray-400 text-sm">
+// // // // //                   No assignments assigned yet. Keep up the great work!
+// // // // //                 </div>
+// // // // //               )}
+// // // // //             </div>
+// // // // //           </div>
+// // // // //         </div>
+// // // // //       </div>
+// // // // //     </div>
+// // // // //   );
+// // // // // }
+// // // // // // import React, { useEffect, useState } from "react";
+// // // // // // import {
+// // // // // //   BookOpen,
+// // // // // //   CheckCircle2,
+// // // // // //   Clock,
+// // // // // //   Upload,
+// // // // // //   FileText,
+// // // // // //   Sparkles,
+// // // // // //   AlertCircle,
+// // // // // //   ExternalLink,
+// // // // // //   ChevronRight,
+// // // // // //   Send,
+// // // // // // } from "lucide-react";
+// // // // // // import { supabase } from "../../../supabase";
+
+// // // // // // export default function StudentHomeworkView({ userId, courseId }) {
+// // // // // //   const [loading, setLoading] = useState(true);
+// // // // // //   const [assignments, setAssignments] = useState([]);
+// // // // // //   const [selectedAssignment, setSelectedAssignment] = useState(null);
+// // // // // //   const [submissionText, setSubmissionText] = useState("");
+// // // // // //   const [submitting, setSubmitting] = useState(false);
+// // // // // // const pendingCount = assignments.filter(a => a.status === "pending").length;
+// // // // // // const submittedCount = assignments.filter(a => a.status === "submitted").length;
+// // // // // // const completedCount = assignments.filter(a => a.status === "completed").length;
+// // // // // //   useEffect(() => {
+// // // // // //     if (userId) {
+// // // // // //       fetchHomework();
+// // // // // //     }
+// // // // // //   }, [userId, courseId]);
+
+// // // // // //   const fetchHomework = async () => {
+// // // // // //     try {
+// // // // // //       setLoading(true);
+// // // // // //       const { data, error } = await supabase
+// // // // // //         .from("student_assignments")
+// // // // // //         .select("*")
+// // // // // //         .eq("student_id", userId)
+// // // // // //         .order("created_at", { ascending: false });
+
+// // // // // //       if (error) throw error;
+
+
+// // // // // //   const handleSelectAssignment = (assignment) => {
+// // // // // //     setSelectedAssignment(assignment);
+// // // // // //     setSubmissionText(assignment.submission_link || "");
+// // // // // //   };
+
+// // // // // //   const handleSubmitHomework = async (e) => {
+// // // // // //     e.preventDefault();
+// // // // // //     if (!selectedAssignment) return;
+
+// // // // // //     try {
+// // // // // //       setSubmitting(true);
+// // // // // //       const { error } = await supabase
+// // // // // //         .from("student_assignments")
+// // // // // //         .update({
+// // // // // //           submission_link: submissionText,
+// // // // // //          status: "submitted", 
+// // // // // //           // updated_at: new Date(),
+// // // // // //           updated_at: new Date().toISOString(),
+// // // // // // submitted_at: new Date().toISOString(),
+// // // // // //         })
+// // // // // //         .eq("id", selectedAssignment.id);
+
+// // // // // //       if (error) throw error;
+// // // // // // setAssignments((prev) =>
+// // // // // //   prev.map((a) =>
+// // // // // //     a.id === selectedAssignment.id
+// // // // // //       ? {
+// // // // // //           ...a,
+// // // // // //           submission_link: submissionText,
+// // // // // //           status: "submitted",
+// // // // // //           submitted_at: new Date().toISOString(),
+// // // // // //         }
+// // // // // //       : a
+// // // // // //   )
+// // // // // // );
+
+// // // // // // setSelectedAssignment((prev) => ({
+// // // // // //   ...prev,
+// // // // // //   submission_link: submissionText,
+// // // // // //   status: "submitted",
+// // // // // //   submitted_at: new Date().toISOString(),
+// // // // // // }));
+// // // // // //       // Update local state
+// // // // // //       setAssignments(
+// // // // // //         assignments.map((a) =>
+// // // // // //           a.id === selectedAssignment.id
+// // // // // //             // ? { ...a, submission_link: submissionText, status: "completed" }
+// // // // // //           ? {
+// // // // // //     ...a,
+// // // // // //     submission_link: submissionText,
+// // // // // //     status: "submitted",
+// // // // // //     submitted_at: new Date().toISOString(),
+// // // // // //   }
+// // // // // //             : a
+// // // // // //         )
+// // // // // //       );
+// // // // // //       alert("Homework submitted successfully! 🎉");
+// // // // // //     } catch (err) {
+// // // // // //       console.error("Error submitting homework:", err.message);
+// // // // // //       alert("Failed to submit homework. Please try again.");
+// // // // // //     } finally {
+// // // // // //       setSubmitting(false);
+// // // // // //     }
+// // // // // //   };
+  
+
+// // // // // //   if (loading) {
+// // // // // //     return (
+// // // // // //       <div className="min-h-[60vh] flex items-center justify-center">
+// // // // // //         <div className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-[30px] p-8 text-center">
+// // // // // //           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-5" />
+// // // // // //           <h2 className="text-white text-xl font-bold">Loading Homework...</h2>
+// // // // // //           <p className="text-gray-400 mt-2">Fetching your assignments 🚀</p>
+// // // // // //         </div>
+// // // // // //       </div>
+// // // // // //     );
+// // // // // //   }
+
+// // // // // //   const completedCount = assignments.filter((a) => a.status === "completed").length;
+// // // // // //   const pendingCount = assignments.filter((a) => a.status === "pending").length;
+
+// // // // // //   return (
+// // // // // //     <div className="space-y-6 p-4 md:p-6 text-gray-900 dark:text-white">
+// // // // // //       {/* Header Banner */}
+// // // // // //       <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl relative overflow-hidden">
+// // // // // //         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 blur-[120px] pointer-events-none" />
+// // // // // //         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+// // // // // //           <div>
+// // // // // //             <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-600 dark:text-blue-300 px-4 py-2 rounded-full text-sm font-bold mb-3">
+// // // // // //               <FileText size={16} />
+// // // // // //               HOMEWORK & TASKS
+// // // // // //             </div>
+// // // // // //             <h1 className="text-3xl md:text-4xl font-black">My Assignments</h1>
+// // // // // //             <p className="text-gray-600 dark:text-gray-300 mt-2 max-w-xl">
+// // // // // //               Track your pending projects, review tutor feedback, and submit your completed coding work.
+// // // // // //             </p>
+// // // // // //           </div>
+// // // // // //           <div className="flex items-center gap-3">
+// // // // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Pending</p>
+// // // // // //               <p className="font-black text-xl text-orange-500">{pendingCount}</p>
+// // // // // //             </div>
+// // // // // //             <div className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-5 py-3 rounded-2xl text-center">
+// // // // // //               <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Completed</p>
+// // // // // //               <p className="font-black text-xl text-green-500">{completedCount}</p>
+// // // // // //             </div>
+// // // // // //           </div>
+// // // // // //         </div>
+// // // // // //       </div>
+
+// // // // // //       {/* Main Grid */}
+// // // // // //       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+// // // // // //         {/* Assignment Details & Submission Form */}
+// // // // // //         <div className="lg:col-span-7 space-y-6">
+// // // // // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 md:p-8 shadow-xl">
+// // // // // //             {selectedAssignment ? (
+// // // // // //               <div className="space-y-6">
+// // // // // //                 <div className="flex items-center justify-between flex-wrap gap-3">
+// // // // // //                   <span
+// // // // // //                     className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider ${
+// // // // // //                       // selectedAssignment.status === "completed"
+// // // // // //                       //   ? "bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20"
+// // // // // //                       //   : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
+// // // // // //                       selectedAssignment.status === "completed"
+// // // // // //   ? "bg-green-500/10 text-green-600"
+// // // // // //   : selectedAssignment.status === "submitted"
+// // // // // //   ? "bg-blue-500/10 text-blue-600"
+// // // // // //   : "bg-orange-500/10 text-orange-600"
+// // // // // //                     }`}
+// // // // // //                     <div
+// // // // // //   className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+// // // // // //     isCompleted
+// // // // // //       ? "bg-green-500/20 text-green-400"
+// // // // // //       : isSubmitted
+// // // // // //       ? "bg-blue-500/20 text-blue-400"
+// // // // // //       : "bg-orange-500/20 text-orange-400"
+// // // // // //   }`}
+// // // // // // >
+// // // // // //   {isCompleted ? (
+// // // // // //     <CheckCircle2 size={20} />
+// // // // // //   ) : (
+// // // // // //     <Clock size={20} />
+// // // // // //   )}
+// // // // // // </div>
+// // // // // //                   >
+// // // // // //                     {selectedAssignment.status || "Pending"}
+// // // // // //                   </span>
+// // // // // //                   <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+// // // // // //                     <Clock size={16} />
+// // // // // //                     <span>
+// // // // // //                       {new Date(selectedAssignment.created_at).toLocaleDateString()}
+// // // // // //                     </span>
+// // // // // //                   </div>
+// // // // // //                 </div>
+
+// // // // // //                 <div>
+// // // // // //                   <h2 className="text-2xl md:text-3xl font-black">
+// // // // // //                     {selectedAssignment.task_name}
+// // // // // //                   </h2>
+// // // // // //                   <p className="text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">
+// // // // // //                     {selectedAssignment.description ||
+// // // // // //                       selectedAssignment.instructions ||
+// // // // // //                       "Complete the assigned task and paste your project or file link below for your tutor to review."}
+// // // // // //                   </p>
+// // // // // //                 </div>
+
+// // // // // //                 <div className="border-t border-gray-200 dark:border-white/10 pt-6">
+// // // // // //                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+// // // // // //                     <Upload size={18} className="text-purple-500" />
+// // // // // //                     Submit Your Work
+// // // // // //                   </h3>
+// // // // // //                   <form onSubmit={handleSubmitHomework} className="space-y-4">
+// // // // // //                     <div>
+// // // // // //                       <label className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
+// // // // // //                         Project Link (Scratch, GitHub, or File URL)
+// // // // // //                       </label>
+// // // // // //                       <input
+// // // // // //                         type="url"
+// // // // // //                         placeholder="https://scratch.mit.edu/projects/... or https://github.com/..."
+// // // // // //                         value={submissionText}
+// // // // // //                         onChange={(e) => setSubmissionText(e.target.value)}
+// // // // // //                         required
+// // // // // //                         className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3.5 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 transition"
+// // // // // //                       />
+// // // // // //                     </div>
+
+// // // // // //                     <button
+// // // // // //                       type="submit"
+// // // // // //                       disabled={submitting}
+// // // // // //                       className="w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20 transition disabled:opacity-50"
+// // // // // //                     >
+// // // // // //                       {submitting ? (
+// // // // // //                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+// // // // // //                       ) : (
+// // // // // //                         <>
+// // // // // //                           <Send size={18} />
+// // // // // //                           <span>{
+// // // // // //                           // selectedAssignment.status === "completed" ? "Update Submission" : "Submit Homework"
+// // // // // //                           selectedAssignment.status === "completed"
+// // // // // //   ? "Resubmit Homework"
+// // // // // //   : selectedAssignment.status === "submitted"
+// // // // // //   ? "Update Submission"
+// // // // // //   : "Submit Homework"
+// // // // // //                         }</span>
+// // // // // //                         </>
+// // // // // //                       )}
+// // // // // //                     </button>
+// // // // // //                   </form>
+// // // // // //                 </div>
+
+// // // // // //                 {selectedAssignment.tutor_feedback && (
+// // // // // //                   <div className="bg-purple-500/5 dark:bg-purple-500/10 border border-purple-500/20 rounded-2xl p-5 mt-6">
+// // // // // //                     <h4 className="font-bold text-purple-600 dark:text-purple-300 flex items-center gap-2 mb-2">
+// // // // // //                       <Sparkles size={16} />
+// // // // // //                       Tutor Feedback
+// // // // // //                     </h4>
+// // // // // //                     <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+// // // // // //                       {selectedAssignment.tutor_feedback}
+// // // // // //                     </p>
+// // // // // //                   </div>
+// // // // // //                 )}
+// // // // // //               </div>
+// // // // // //             ) : (
+// // // // // //               <div className="text-center py-20 text-gray-400">
+// // // // // //                 <FileText size={48} className="mx-auto mb-4 opacity-50" />
+// // // // // //                 <p className="text-lg font-bold">Select an assignment to view details and submit.</p>
+// // // // // //               </div>
+// // // // // //             )}
+// // // // // //           </div>
+// // // // // //         </div>
+
+// // // // // //         {/* Assignments List Sidebar */}
+// // // // // //         <div className="lg:col-span-5 space-y-4">
+// // // // // //           <div className="bg-white dark:bg-white/5 backdrop-blur-2xl border border-gray-200 dark:border-white/10 rounded-[35px] p-6 shadow-xl">
+// // // // // //             <div className="flex items-center justify-between mb-5">
+// // // // // //               <h3 className="text-xl font-black">All Assignments</h3>
+// // // // // //               <span className="text-xs bg-purple-500/10 text-purple-600 dark:text-purple-300 font-bold px-3 py-1 rounded-full">
+// // // // // //                 {assignments.length} Total
+// // // // // //               </span>
+// // // // // //             </div>
+
+// // // // // //             <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
+// // // // // //               {assignments.length > 0 ? (
+// // // // // //                 assignments.map((item) => {
+// // // // // //                   const isSelected = selectedAssignment?.id === item.id;
+// // // // // //                   const isCompleted = item.status === "completed";
+// // // // // //                   // const isCompleted = item.status === "completed";
+// // // // // // const isSubmitted = item.status === "submitted";
+// // // // // //                   return (
+// // // // // //                     <div
+// // // // // //                       key={item.id}
+// // // // // //                       onClick={() => handleSelectAssignment(item)}
+// // // // // //                       className={`cursor-pointer rounded-2xl p-4 transition-all border flex items-center justify-between ${
+// // // // // //                         isSelected
+// // // // // //                           ? "bg-purple-600 text-white border-purple-600 shadow-lg shadow-purple-500/20"
+// // // // // //                           : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/10"
+// // // // // //                       }`}
+// // // // // //                     >
+// // // // // //                       <div className="flex items-center gap-3">
+// // // // // //                         <div
+// // // // // //                           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+// // // // // //                             isCompleted
+// // // // // //                               ? "bg-green-500/20 text-green-400"
+// // // // // //                               : "bg-orange-500/20 text-orange-400"
+// // // // // //                           }`}
+// // // // // //                         >
+// // // // // //                           {isCompleted ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+// // // // // //                         </div>
+// // // // // //                         <div>
+// // // // // //                           <p
+// // // // // //                             className={`font-bold text-sm line-clamp-1 ${
+// // // // // //                               isSelected ? "text-white" : "text-gray-800 dark:text-white"
+// // // // // //                             }`}
+// // // // // //                           >
+// // // // // //                             {item.task_name}
+// // // // // //                           </p>
+// // // // // //                           <p className={`text-xs capitalize ${isSelected ? "text-white/80" : "text-gray-400"}`}>
+// // // // // //                             {item.status || "Pending"}
+// // // // // //                           </p>
+// // // // // //                         </div>
+// // // // // //                       </div>
+// // // // // //                       <ChevronRight size={18} className={isSelected ? "text-white" : "text-gray-400"} />
+// // // // // //                     </div>
+// // // // // //                   );
+// // // // // //                 })
+// // // // // //               ) : (
+// // // // // //                 <div className="text-center py-12 text-gray-400 text-sm">
+// // // // // //                   No assignments assigned yet. Keep up the great work!
+// // // // // //                 </div>
+// // // // // //               )}
+// // // // // //             </div>
+// // // // // //           </div>
+// // // // // //         </div>
+// // // // // //       </div>
+// // // // // //     </div>
+// // // // // //   );
+// // // // // // }
