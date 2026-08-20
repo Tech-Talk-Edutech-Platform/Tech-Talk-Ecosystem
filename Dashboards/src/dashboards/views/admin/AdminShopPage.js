@@ -15,6 +15,14 @@ import {
 } from "lucide-react";
 import { supabase } from "../../../supabase";
 
+const productCategories = [
+  "Books",
+  "Learning Kits",
+  "Games & Activities",
+  "Stationery & Tech Gear",
+  "Merchandise",
+];
+
 const emptyForm = {
   name: "",
   slug: "",
@@ -144,39 +152,62 @@ export default function AdminShopPage() {
     setModalOpen(true);
   }
 
+
   async function uploadImage(file) {
     if (!file) return;
 
-    setUploading(true);
+    try {
+      setUploading(true);
 
-    const extension = file.name.split(".").pop();
-    const fileName = `${crypto.randomUUID()}.${extension}`;
-    const filePath = `products/${fileName}`;
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Please select an image file.");
+      }
 
-    const { error } = await supabase.storage
-      .from("shop-products")
-      .upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Image must be smaller than 5MB.");
+      }
 
-    if (error) {
-      alert(error.message);
+      const extension =
+        file.name.split(".").pop()?.toLowerCase() || "jpg";
+
+      const fileName = `${crypto.randomUUID()}.${extension}`;
+      const filePath = `products/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("shop-products")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type,
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabase.storage
+        .from("shop-products")
+        .getPublicUrl(filePath);
+
+      if (!data?.publicUrl) {
+        throw new Error("Could not get image URL.");
+      }
+
+      setForm((previous) => ({
+        ...previous,
+        image_url: data.publicUrl,
+      }));
+    } catch (error) {
+      console.error("Product image upload failed:", error);
+
+      alert(
+        error?.message ||
+          "Image upload failed. Please try again."
+      );
+    } finally {
       setUploading(false);
-      return;
     }
-
-    const { data } = supabase.storage
-      .from("shop-products")
-      .getPublicUrl(filePath);
-
-    setForm((previous) => ({
-      ...previous,
-      image_url: data.publicUrl,
-    }));
-
-    setUploading(false);
-  }
+}
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -399,11 +430,11 @@ export default function AdminShopPage() {
                   {/* Image */}
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
                     {product.image_url ? (
-                      <Image
+                      <img
                         src={product.image_url}
                         alt={product.name}
                        
-                        className="object-cover"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
@@ -541,11 +572,11 @@ export default function AdminShopPage() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="relative h-28 w-28 overflow-hidden rounded-2xl bg-slate-100">
                     {form.image_url ? (
-                      <Image
+                      <img
                         src={form.image_url}
                         alt="Product"
                       
-                        className="object-cover"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">
@@ -628,21 +659,27 @@ export default function AdminShopPage() {
                   </select>
                 </Field>
 
-                <Field label="Category">
-                  <input
-                    required
-                    placeholder="e.g. Books"
-                    value={form.category}
-                    onChange={(event) =>
-                      setForm({
-                        ...form,
-                        category:
-                          event.target.value,
-                      })
-                    }
-                    className={inputClass}
-                  />
-                </Field>
+               <Field label="Category">
+  <select
+    required
+    value={form.category}
+    onChange={(event) =>
+      setForm({
+        ...form,
+        category: event.target.value,
+      })
+    }
+    className={inputClass}
+  >
+    <option value="">Select category</option>
+
+    {productCategories.map((category) => (
+      <option key={category} value={category}>
+        {category}
+      </option>
+    ))}
+  </select>
+</Field>
 
               </div>
 
