@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -350,14 +350,13 @@ export default function ShopPage() {
           <div className="relative flex items-center justify-center">
             <div className="absolute h-[75%] w-[75%] rounded-full bg-purple-300/10 blur-[80px]" />
 
-            <Image
-              src="/shop/premium-shop-hero.png"
-              alt="Tech Talk Hub premium shop"
-              width={620}
-              height={400}
-              priority
-              className="relative mx-auto h-auto w-full max-w-[500px] object-contain lg:max-w-[560px] xl:max-w-[620px]"
-            />
+           <img
+  src="/shop/premium-shop-hero.png"
+  alt="Tech Talk Hub premium shop"
+  width={620}
+  height={370}
+  className="h-auto w-full max-w-[620px] object-contain"
+/>
           </div>
         </div>
       </section>
@@ -548,12 +547,10 @@ export default function ShopPage() {
                   )}
 
                   {product.image_url ? (
-                    <Image
-                      src={product.image_url}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 25vw, 20vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    <img
+                       src={product.image_url}
+    alt={product.name}
+    className="h-full w-full object-cover"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gradient-to-br from-[#151a37] via-[#25205d] to-[#16162d]">
