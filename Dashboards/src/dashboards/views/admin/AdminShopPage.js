@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+
 import {
   Plus,
   Pencil,
@@ -13,7 +13,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../../supabase";
 
 const emptyForm = {
   name: "",
@@ -402,7 +402,7 @@ export default function AdminShopPage() {
                       <Image
                         src={product.image_url}
                         alt={product.name}
-                        fill
+                       
                         className="object-cover"
                       />
                     ) : (
@@ -544,7 +544,7 @@ export default function AdminShopPage() {
                       <Image
                         src={form.image_url}
                         alt="Product"
-                        fill
+                      
                         className="object-cover"
                       />
                     ) : (
