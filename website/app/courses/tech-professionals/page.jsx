@@ -4,7 +4,7 @@ import PublicProgramPage from "../../../components/PublicProgramPage";
 
 export const metadata = {
   title:
-    "Tech Professionals | Technology for Ages 13–18 | Tech Talk Hub",
+    "Tech Professionals | Technology for Ages 13–18",
   description:
     "Explore Tech Professionals, Tech Talk Hub's advanced technology pathway for teens aged 13–18.",
 };

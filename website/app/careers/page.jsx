@@ -14,7 +14,7 @@ import {
 import InformationPageLayout from "../../components/InformationPageLayout";
 
 export const metadata = {
-  title: "Careers | Tech Talk Hub",
+  title: "Careers",
 
   description:
     "Explore opportunities to help young Africans learn coding, build confidence and create with technology at Tech Talk Hub.",

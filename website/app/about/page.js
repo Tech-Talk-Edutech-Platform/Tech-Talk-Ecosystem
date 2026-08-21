@@ -16,7 +16,7 @@ import { client } from "../../lib/sanity";
 
 export const metadata = {
   title:
-    "About Tech Talk Hub | Coding Education for Kids in Africa",
+    "About",
 
   description:
     "Discover how Tech Talk Hub helps African children develop coding, creativity, and problem-solving skills through engaging online classes.",

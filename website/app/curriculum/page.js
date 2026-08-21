@@ -2,7 +2,7 @@ import { client } from '../../lib/sanity';
 import CurriculumClientPage from '../../components/CurriculumClientPage';
 
 export const metadata = {
-  title: 'Coding Curriculum for Kids | Tech Talk Hub',
+  title: 'Coding Curriculum for Kids',
   description: 'Explore our flexible coding curriculum from Scratch to AI. Designed for K-12 students to master digital skills at their own pace.',
 };
 

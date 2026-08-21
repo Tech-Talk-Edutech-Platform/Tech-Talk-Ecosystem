@@ -3,7 +3,7 @@ import AppFooter from "../../../components/Footer";
 import PublicProgramPage from "../../../components/PublicProgramPage";
 
 export const metadata = {
-  title: "Junior Coders | Coding for Ages 5–8 | Tech Talk Hub",
+  title: "Junior Coders | Coding for Ages 5–8",
   description:
     "Explore Junior Coders, Tech Talk Hub's coding pathway for children aged 5–8.",
 };

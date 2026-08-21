@@ -15,9 +15,10 @@ import {
 } from "lucide-react";
 
 import { supabase } from "../../lib/supabase";
+import AppFooter from "../../components/Footer";
 
 export const metadata = {
-  title: "Blog | Tech Talk Hub",
+  title: "Blog",
 
   description:
     "Practical coding guidance, learner stories and technology insights for families raising Africa’s next generation of innovators.",
@@ -637,6 +638,7 @@ export default async function BlogIndexPage({
           </div>
         </div>
       </section>
+      <AppFooter />
     </main>
   );
 }
