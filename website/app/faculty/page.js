@@ -1,4 +1,4 @@
-import FacultyDirectory from "@/components/FacultyDirectory";
+import FacultyDirectory from "../../components/FacultyDirectory";
 export default function FacultyPage() {
   return <FacultyDirectory />;
 }

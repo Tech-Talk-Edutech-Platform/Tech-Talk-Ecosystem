@@ -10,7 +10,7 @@ import {
   Heart,
   UserRound,
 } from "lucide-react";
- import { supabase } from "../../lib/supabase";
+ import { supabase } from "../../../lib/supabase";
 export const revalidate = 60;
 
 function formatDate(date) {
@@ -47,7 +47,7 @@ async function getPost(slug) {
 }
 
 async function getRelatedPosts(post) {
-  const supabase = await createClient();
+
 
   let query = supabase
     .from("blog_posts")
