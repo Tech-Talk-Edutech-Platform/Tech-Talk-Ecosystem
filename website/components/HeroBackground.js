@@ -1,106 +1,74 @@
 "use client";
 
-export default function HeroBackground({ children }) {
+export default function HeroBackground({
+  children,
+}) {
   return (
-    <div className="relative w-full overflow-hidden bg-[#f8f6ff]">
-
-      {/* =========================================
-          PREMIUM BASE BACKGROUND
-      ========================================== */}
+    <div className="relative w-full overflow-hidden bg-[#F8F5FF]">
+      {/* Base background */}
       <div
         className="absolute inset-0"
         style={{
           background: `
             radial-gradient(
-              circle at 8% 10%,
+              circle at 8% 12%,
               rgba(255,255,255,1) 0%,
-              rgba(255,255,255,0.85) 18%,
-              transparent 42%
+              rgba(255,255,255,0.90) 22%,
+              transparent 45%
             ),
             radial-gradient(
-              circle at 88% 20%,
-              rgba(216,180,254,0.30) 0%,
+              circle at 92% 16%,
+              rgba(255,63,127,0.12) 0%,
               transparent 38%
             ),
             radial-gradient(
-              circle at 55% 95%,
-              rgba(196,181,253,0.24) 0%,
-              transparent 45%
+              circle at 56% 100%,
+              rgba(155,108,255,0.18) 0%,
+              transparent 48%
             ),
             linear-gradient(
               135deg,
               #ffffff 0%,
-              #faf8ff 35%,
-              #f4efff 68%,
-              #eee7ff 100%
+              #fbf9ff 35%,
+              #f5efff 68%,
+              #eee5ff 100%
             )
           `,
         }}
       />
 
-      {/* =========================================
-          SOFT LEFT GLOW
-      ========================================== */}
-      <div
-        className="
-          absolute
-          -left-32
-          top-16
-          h-[380px]
-          w-[380px]
-          rounded-full
-          bg-purple-300/20
-          blur-[100px]
-        "
-      />
+      {/* Soft glows */}
+      <div className="absolute -left-32 top-20 h-[380px] w-[380px] rounded-full bg-purple-300/15 blur-[100px]" />
 
-      {/* =========================================
-          SOFT RIGHT GLOW
-      ========================================== */}
-      <div
-        className="
-          absolute
-          -right-24
-          top-0
-          h-[430px]
-          w-[430px]
-          rounded-full
-          bg-fuchsia-300/15
-          blur-[110px]
-        "
-      />
+      <div className="absolute -right-24 top-0 h-[430px] w-[430px] rounded-full bg-pink-300/15 blur-[110px]" />
 
-      {/* =========================================
-          SUBTLE TECH GRID
-      ========================================== */}
+      {/* Tech grid */}
       <div
         className="absolute inset-0 opacity-[0.035]"
         style={{
           backgroundImage: `
-            linear-gradient(#6d28d9 1px, transparent 1px),
-            linear-gradient(90deg, #6d28d9 1px, transparent 1px)
+            linear-gradient(#2947C7 1px, transparent 1px),
+            linear-gradient(90deg, #2947C7 1px, transparent 1px)
           `,
           backgroundSize: "48px 48px",
           maskImage:
-            "linear-gradient(to bottom, black, transparent 85%)",
+            "linear-gradient(to bottom, black, transparent 88%)",
           WebkitMaskImage:
-            "linear-gradient(to bottom, black, transparent 85%)",
+            "linear-gradient(to bottom, black, transparent 88%)",
         }}
       />
 
-      {/* =========================================
-          ABSTRACT PREMIUM SHAPES
-      ========================================== */}
+      {/* Background waves */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 1440 560"
+        viewBox="0 0 1440 620"
         preserveAspectRatio="none"
         className="pointer-events-none absolute inset-0 h-full w-full"
+        aria-hidden="true"
       >
         <defs>
-          {/* Purple Wave */}
           <linearGradient
-            id="premiumWave"
+            id="heroWave"
             x1="0"
             y1="0"
             x2="1"
@@ -108,26 +76,25 @@ export default function HeroBackground({ children }) {
           >
             <stop
               offset="0%"
-              stopColor="#c4b5fd"
+              stopColor="#C4B5FD"
               stopOpacity="0.04"
             />
 
             <stop
-              offset="45%"
-              stopColor="#a78bfa"
-              stopOpacity="0.13"
+              offset="55%"
+              stopColor="#9B6CFF"
+              stopOpacity="0.10"
             />
 
             <stop
               offset="100%"
-              stopColor="#9333ea"
-              stopOpacity="0.17"
+              stopColor="#FF3F7F"
+              stopOpacity="0.08"
             />
           </linearGradient>
 
-          {/* Purple / Pink Accent */}
           <linearGradient
-            id="accentWave"
+            id="heroAccent"
             x1="0"
             y1="0"
             x2="1"
@@ -135,182 +102,393 @@ export default function HeroBackground({ children }) {
           >
             <stop
               offset="0%"
-              stopColor="#7c3aed"
+              stopColor="#2947C7"
               stopOpacity="0"
             />
 
             <stop
-              offset="50%"
-              stopColor="#9333ea"
-              stopOpacity="0.09"
+              offset="55%"
+              stopColor="#9B6CFF"
+              stopOpacity="0.08"
             />
 
             <stop
               offset="100%"
-              stopColor="#ec4899"
-              stopOpacity="0.08"
+              stopColor="#FF3F7F"
+              stopOpacity="0.10"
             />
           </linearGradient>
         </defs>
 
-        {/* Main flowing background shape */}
         <path
-          fill="url(#premiumWave)"
+          fill="url(#heroWave)"
           d="
-            M1440 80
-            C1250 25 1110 90 970 175
-            C820 265 680 295 520 255
-            C340 210 200 220 0 345
-            L0 560
-            L1440 560
+            M1440 120
+            C1240 45 1110 100 950 200
+            C790 300 650 315 500 270
+            C325 220 190 240 0 370
+            L0 620
+            L1440 620
             Z
           "
         />
 
-        {/* Secondary flowing layer */}
         <path
-          fill="url(#accentWave)"
+          fill="url(#heroAccent)"
           d="
-            M1440 210
-            C1260 130 1110 160 930 245
-            C730 340 560 340 390 300
-            C230 260 110 290 0 390
-            L0 560
-            L1440 560
+            M1440 250
+            C1250 170 1090 195 910 280
+            C720 370 540 365 370 325
+            C220 290 100 315 0 410
+            L0 620
+            L1440 620
             Z
           "
         />
 
-        {/* Fine decorative curve */}
         <path
           d="
-            M-50 420
-            C280 250 470 390 730 325
-            C980 260 1180 150 1500 280
+            M-50 460
+            C280 285 470 425 730 350
+            C980 285 1180 180 1500 310
           "
           fill="none"
-          stroke="#9333ea"
-          strokeOpacity="0.08"
+          stroke="#9B6CFF"
+          strokeOpacity="0.10"
           strokeWidth="1.5"
-        />
-
-        {/* Decorative particles */}
-        <circle
-          cx="120"
-          cy="135"
-          r="3"
-          fill="#9333ea"
-          opacity="0.18"
-        />
-
-        <circle
-          cx="410"
-          cy="105"
-          r="2.5"
-          fill="#ec4899"
-          opacity="0.18"
-        />
-
-        <circle
-          cx="760"
-          cy="90"
-          r="3"
-          fill="#7c3aed"
-          opacity="0.13"
-        />
-
-        <circle
-          cx="1280"
-          cy="120"
-          r="3"
-          fill="#9333ea"
-          opacity="0.16"
         />
       </svg>
 
-      {/* =========================================
-          SMALL GLOW PARTICLES
-      ========================================== */}
-      <div
-        className="
-          absolute
-          left-[6%]
-          top-[28%]
-          h-2
-          w-2
-          rounded-full
-          bg-secondary/30
-          shadow-[0_0_20px_rgba(236,72,153,0.5)]
-        "
-      />
+      {/* Small particles */}
+      <div className="absolute left-[7%] top-[31%] h-2 w-2 rounded-full bg-[#FF3F7F]/50 shadow-[0_0_18px_rgba(255,63,127,0.35)]" />
 
-      <div
-        className="
-          absolute
-          right-[12%]
-          top-[18%]
-          h-2
-          w-2
-          rounded-full
-          bg-primary/30
-          shadow-[0_0_20px_rgba(109,40,217,0.5)]
-        "
-      />
+      <div className="absolute left-[38%] top-[18%] h-1.5 w-1.5 rounded-full bg-[#9B6CFF]/40" />
 
-      {/* =========================================
-          HERO CONTENT
-      ========================================== */}
-      <div className="relative z-10 flex min-h-[530px] w-full items-center">
+      <div className="absolute right-[10%] top-[20%] h-2 w-2 rounded-full bg-[#2947C7]/30" />
+
+      {/* Page content */}
+      <div className="relative z-10">
         {children}
       </div>
 
-      {/* =========================================
-          CLEAN BOTTOM SEPARATOR
-      ========================================== */}
-      <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full bg-purple-100/50" />
+      {/* Bottom blend */}
+      <div className="pointer-events-none absolute bottom-0 left-0 h-20 w-full bg-gradient-to-t from-[#F1E8FF]/70 to-transparent" />
     </div>
   );
 }
-// 'use client';
-// export default function HeroBackground({ children }) {
-//   const radialGradientStyle = {
-//     backgroundColor: '#f1eafd', 
-//     background: 'radial-gradient(circle at 10% 10%, #ffffff 0%, #f1eafd 70%, #e0d0fa 100%)',
-//   };
+// "use client";
 
+// export default function HeroBackground({ children }) {
 //   return (
-//     <div 
-//       className="relative w-full" 
-//       style={{ minHeight: 530, ...radialGradientStyle }} // Kept dynamic height layout safe
-//     >
+//     <div className="relative w-full overflow-hidden bg-[#f8f6ff]">
+
+//       {/* =========================================
+//           PREMIUM BASE BACKGROUND
+//       ========================================== */}
+//       <div
+//         className="absolute inset-0"
+//         style={{
+//           background: `
+//             radial-gradient(
+//               circle at 8% 10%,
+//               rgba(255,255,255,1) 0%,
+//               rgba(255,255,255,0.85) 18%,
+//               transparent 42%
+//             ),
+//             radial-gradient(
+//               circle at 88% 20%,
+//               rgba(216,180,254,0.30) 0%,
+//               transparent 38%
+//             ),
+//             radial-gradient(
+//               circle at 55% 95%,
+//               rgba(196,181,253,0.24) 0%,
+//               transparent 45%
+//             ),
+//             linear-gradient(
+//               135deg,
+//               #ffffff 0%,
+//               #faf8ff 35%,
+//               #f4efff 68%,
+//               #eee7ff 100%
+//             )
+//           `,
+//         }}
+//       />
+
+//       {/* =========================================
+//           SOFT LEFT GLOW
+//       ========================================== */}
+//       <div
+//         className="
+//           absolute
+//           -left-32
+//           top-16
+//           h-[380px]
+//           w-[380px]
+//           rounded-full
+//           bg-purple-300/20
+//           blur-[100px]
+//         "
+//       />
+
+//       {/* =========================================
+//           SOFT RIGHT GLOW
+//       ========================================== */}
+//       <div
+//         className="
+//           absolute
+//           -right-24
+//           top-0
+//           h-[430px]
+//           w-[430px]
+//           rounded-full
+//           bg-fuchsia-300/15
+//           blur-[110px]
+//         "
+//       />
+
+//       {/* =========================================
+//           SUBTLE TECH GRID
+//       ========================================== */}
+//       <div
+//         className="absolute inset-0 opacity-[0.035]"
+//         style={{
+//           backgroundImage: `
+//             linear-gradient(#6d28d9 1px, transparent 1px),
+//             linear-gradient(90deg, #6d28d9 1px, transparent 1px)
+//           `,
+//           backgroundSize: "48px 48px",
+//           maskImage:
+//             "linear-gradient(to bottom, black, transparent 85%)",
+//           WebkitMaskImage:
+//             "linear-gradient(to bottom, black, transparent 85%)",
+//         }}
+//       />
+
+//       {/* =========================================
+//           ABSTRACT PREMIUM SHAPES
+//       ========================================== */}
 //       <svg
 //         xmlns="http://www.w3.org/2000/svg"
-//         viewBox="0 0 1440 530" 
-//         className="absolute inset-0 w-full h-full pointer-events-none"
-//         preserveAspectRatio="xMaxYMin slice"
+//         viewBox="0 0 1440 560"
+//         preserveAspectRatio="none"
+//         className="pointer-events-none absolute inset-0 h-full w-full"
 //       >
+//         <defs>
+//           {/* Purple Wave */}
+//           <linearGradient
+//             id="premiumWave"
+//             x1="0"
+//             y1="0"
+//             x2="1"
+//             y2="1"
+//           >
+//             <stop
+//               offset="0%"
+//               stopColor="#c4b5fd"
+//               stopOpacity="0.04"
+//             />
+
+//             <stop
+//               offset="45%"
+//               stopColor="#a78bfa"
+//               stopOpacity="0.13"
+//             />
+
+//             <stop
+//               offset="100%"
+//               stopColor="#9333ea"
+//               stopOpacity="0.17"
+//             />
+//           </linearGradient>
+
+//           {/* Purple / Pink Accent */}
+//           <linearGradient
+//             id="accentWave"
+//             x1="0"
+//             y1="0"
+//             x2="1"
+//             y2="0"
+//           >
+//             <stop
+//               offset="0%"
+//               stopColor="#7c3aed"
+//               stopOpacity="0"
+//             />
+
+//             <stop
+//               offset="50%"
+//               stopColor="#9333ea"
+//               stopOpacity="0.09"
+//             />
+
+//             <stop
+//               offset="100%"
+//               stopColor="#ec4899"
+//               stopOpacity="0.08"
+//             />
+//           </linearGradient>
+//         </defs>
+
+//         {/* Main flowing background shape */}
 //         <path
-//           fill="#a78bfa"
-//           fillOpacity="0.3" 
-//           d="M 1440 530 L 1440 180 C 1300 0 1100 100 850 160 C 600 220 300 180 0 300 L 0 530 Z"
+//           fill="url(#premiumWave)"
+//           d="
+//             M1440 80
+//             C1250 25 1110 90 970 175
+//             C820 265 680 295 520 255
+//             C340 210 200 220 0 345
+//             L0 560
+//             L1440 560
+//             Z
+//           "
 //         />
+
+//         {/* Secondary flowing layer */}
 //         <path
-//           fill="#9333ea" 
-//           fillOpacity="0.3" 
-//           d="M 1440 530 L 1440 250 C 1200 50 1000 150 700 200 C 400 250 200 200 0 350 L 0 530 Z"
+//           fill="url(#accentWave)"
+//           d="
+//             M1440 210
+//             C1260 130 1110 160 930 245
+//             C730 340 560 340 390 300
+//             C230 260 110 290 0 390
+//             L0 560
+//             L1440 560
+//             Z
+//           "
 //         />
+
+//         {/* Fine decorative curve */}
 //         <path
-//           fill="#6d28d9" 
-//           fillOpacity="0.5" 
-//           d="M0,500L48,490.7C96,480,192,470,288,474.7C384,479,480,490,576,496C672,501,768,501,864,490.7C960,480,1056,469,1152,474.7C1248,480,1344,501,1392,512L1440,523L1440,530L0,530Z"
+//           d="
+//             M-50 420
+//             C280 250 470 390 730 325
+//             C980 260 1180 150 1500 280
+//           "
+//           fill="none"
+//           stroke="#9333ea"
+//           strokeOpacity="0.08"
+//           strokeWidth="1.5"
 //         />
-//         <circle cx="700" cy="200" r="5" fill="white" />
-//         <circle cx="400" cy="214" r="5" fill="#9333ea" opacity="0.5" />
+
+//         {/* Decorative particles */}
+//         <circle
+//           cx="120"
+//           cy="135"
+//           r="3"
+//           fill="#9333ea"
+//           opacity="0.18"
+//         />
+
+//         <circle
+//           cx="410"
+//           cy="105"
+//           r="2.5"
+//           fill="#ec4899"
+//           opacity="0.18"
+//         />
+
+//         <circle
+//           cx="760"
+//           cy="90"
+//           r="3"
+//           fill="#7c3aed"
+//           opacity="0.13"
+//         />
+
+//         <circle
+//           cx="1280"
+//           cy="120"
+//           r="3"
+//           fill="#9333ea"
+//           opacity="0.16"
+//         />
 //       </svg>
 
-//       <div className="relative z-10 h-full flex items-center w-full">
+//       {/* =========================================
+//           SMALL GLOW PARTICLES
+//       ========================================== */}
+//       <div
+//         className="
+//           absolute
+//           left-[6%]
+//           top-[28%]
+//           h-2
+//           w-2
+//           rounded-full
+//           bg-secondary/30
+//           shadow-[0_0_20px_rgba(236,72,153,0.5)]
+//         "
+//       />
+
+//       <div
+//         className="
+//           absolute
+//           right-[12%]
+//           top-[18%]
+//           h-2
+//           w-2
+//           rounded-full
+//           bg-primary/30
+//           shadow-[0_0_20px_rgba(109,40,217,0.5)]
+//         "
+//       />
+
+//       {/* =========================================
+//           HERO CONTENT
+//       ========================================== */}
+//       <div className="relative z-10 flex min-h-[530px] w-full items-center">
 //         {children}
 //       </div>
+
+//       {/* =========================================
+//           CLEAN BOTTOM SEPARATOR
+//       ========================================== */}
+//       <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full bg-purple-100/50" />
 //     </div>
 //   );
 // }
+// // 'use client';
+// // export default function HeroBackground({ children }) {
+// //   const radialGradientStyle = {
+// //     backgroundColor: '#f1eafd', 
+// //     background: 'radial-gradient(circle at 10% 10%, #ffffff 0%, #f1eafd 70%, #e0d0fa 100%)',
+// //   };
+
+// //   return (
+// //     <div 
+// //       className="relative w-full" 
+// //       style={{ minHeight: 530, ...radialGradientStyle }} // Kept dynamic height layout safe
+// //     >
+// //       <svg
+// //         xmlns="http://www.w3.org/2000/svg"
+// //         viewBox="0 0 1440 530" 
+// //         className="absolute inset-0 w-full h-full pointer-events-none"
+// //         preserveAspectRatio="xMaxYMin slice"
+// //       >
+// //         <path
+// //           fill="#a78bfa"
+// //           fillOpacity="0.3" 
+// //           d="M 1440 530 L 1440 180 C 1300 0 1100 100 850 160 C 600 220 300 180 0 300 L 0 530 Z"
+// //         />
+// //         <path
+// //           fill="#9333ea" 
+// //           fillOpacity="0.3" 
+// //           d="M 1440 530 L 1440 250 C 1200 50 1000 150 700 200 C 400 250 200 200 0 350 L 0 530 Z"
+// //         />
+// //         <path
+// //           fill="#6d28d9" 
+// //           fillOpacity="0.5" 
+// //           d="M0,500L48,490.7C96,480,192,470,288,474.7C384,479,480,490,576,496C672,501,768,501,864,490.7C960,480,1056,469,1152,474.7C1248,480,1344,501,1392,512L1440,523L1440,530L0,530Z"
+// //         />
+// //         <circle cx="700" cy="200" r="5" fill="white" />
+// //         <circle cx="400" cy="214" r="5" fill="#9333ea" opacity="0.5" />
+// //       </svg>
+
+// //       <div className="relative z-10 h-full flex items-center w-full">
+// //         {children}
+// //       </div>
+// //     </div>
+// //   );
+// // }
