@@ -15,7 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 
-import { supabase } from "../../../supabaseClient";
+import { supabase } from "../../../supabase"
 
 const emptyForm = {
   id: null,

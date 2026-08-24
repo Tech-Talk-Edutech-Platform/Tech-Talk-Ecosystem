@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 
 import {
   Loader2,
@@ -10,8 +9,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-
-import { supabase } from "../../../lib/supabase";
+import { supabase } from "../../../supabase"
 
 const initialForm = {
   parent_name: "",
@@ -394,7 +392,7 @@ export default function AdminTestimonialsPage() {
                     className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
                   >
                     <div className="relative aspect-[4/5] bg-slate-100">
-                      <Image
+                      <img
                         src={testimonial.screenshot_url}
                         alt="Testimonial screenshot"
                         fill
