@@ -677,168 +677,453 @@ function FeaturedQuote({
   );
 }
 
-function ArticleContent({
-  content,
-}) {
+// function ArticleContent({
+//   content,
+// }) {
+//   return (
+//     <div className="article-content">
+//       <ReactMarkdown
+//         remarkPlugins={[
+//           remarkGfm,
+//         ]}
+//         components={{
+//           h1({
+//             children,
+//           }) {
+//             const title =
+//               getNodeText(
+//                 children
+//               );
+
+//             return (
+//               <h2
+//                 id={createHeadingId(
+//                   title
+//                 )}
+//                 className="mb-5 mt-14 scroll-mt-28 text-3xl font-black leading-tight tracking-tight text-[#2947C7] sm:text-4xl"
+//               >
+//                 {children}
+//               </h2>
+//             );
+//           },
+
+//           h2({
+//             children,
+//           }) {
+//             const title =
+//               getNodeText(
+//                 children
+//               );
+
+//             const displayAgeCards =
+//               shouldShowAgeCards(
+//                 title,
+
+//                 content
+//               );
+
+//             const displayBenefitsCards =
+//               shouldShowBenefitsCards(
+//                 title
+//               );
+
+//             const displayChecklist =
+//               shouldShowChecklist(
+//                 title
+//               );
+
+//             return (
+//               <>
+//                 <h2
+//                   id={createHeadingId(
+//                     title
+//                   )}
+//                   className="mb-5 mt-14 scroll-mt-28 text-[1.75rem] font-black leading-tight tracking-tight text-[#2947C7] sm:mt-16 sm:text-[2rem]"
+//                 >
+//                   {children}
+//                 </h2>
+
+//                 {displayAgeCards && (
+//                   <AgeGroupCards />
+//                 )}
+
+//                 {displayBenefitsCards && (
+//                   <BenefitsCards />
+//                 )}
+
+//                 {displayChecklist && (
+//                   <LearningChecklist />
+//                 )}
+//               </>
+//             );
+//           },
+
+//           h3({
+//             children,
+//           }) {
+//             const title =
+//               getNodeText(
+//                 children
+//               );
+
+//             const isNumberedBenefit =
+//               /^\d+\.\s/.test(
+//                 title
+//               );
+
+//             return (
+//               <h3
+//                 id={createHeadingId(
+//                   title
+//                 )}
+//                 className={`mb-4 mt-10 scroll-mt-28 font-extrabold leading-snug text-[#172554] ${
+//                   isNumberedBenefit
+//                     ? "text-lg sm:text-xl"
+//                     : "text-xl sm:text-2xl"
+//                 }`}
+//               >
+//                 {children}
+//               </h3>
+//             );
+//           },
+
+//           h4({
+//             children,
+//           }) {
+//             const title =
+//               getNodeText(
+//                 children
+//               );
+
+//             return (
+//               <h4
+//                 id={createHeadingId(
+//                   title
+//                 )}
+//                 className="mb-3 mt-8 scroll-mt-28 text-lg font-bold text-[#172554]"
+//               >
+//                 {children}
+//               </h4>
+//             );
+//           },
+
+//           p({
+//             children,
+
+//             node,
+//           }) {
+//             const containsImage =
+//               node?.children?.some(
+//                 (child) =>
+//                   child.tagName ===
+//                   "img"
+//               );
+
+//             if (
+//               containsImage
+//             ) {
+//               return (
+//                 <>
+//                   {children}
+//                 </>
+//               );
+//             }
+
+//             return (
+//               <p className="my-5 text-[16px] leading-[1.95] text-slate-600 sm:text-[17px]">
+//                 {children}
+//               </p>
+//             );
+//           },
+
+//           strong({
+//             children,
+//           }) {
+//             return (
+//               <strong className="font-extrabold text-[#172554]">
+//                 {children}
+//               </strong>
+//             );
+//           },
+
+//           em({
+//             children,
+//           }) {
+//             return (
+//               <em className="text-slate-700">
+//                 {children}
+//               </em>
+//             );
+//           },
+
+//           ul({
+//             children,
+//           }) {
+//             return (
+//               <ul className="my-7 list-disc space-y-3 pl-6 marker:text-[#FF3F7F]">
+//                 {children}
+//               </ul>
+//             );
+//           },
+
+//           ol({
+//             children,
+//           }) {
+//             return (
+//               <ol className="my-7 list-decimal space-y-3 pl-6 marker:font-bold marker:text-[#FF3F7F]">
+//                 {children}
+//               </ol>
+//             );
+//           },
+
+//           li({
+//             children,
+//           }) {
+//             return (
+//               <li className="pl-2 text-[16px] leading-8 text-slate-600 sm:text-[17px] [&_p]:my-0">
+//                 {children}
+//               </li>
+//             );
+//           },
+
+//           blockquote({
+//             children,
+//           }) {
+//             return (
+//               <FeaturedQuote>
+//                 {children}
+//               </FeaturedQuote>
+//             );
+//           },
+
+//           a({
+//             href,
+
+//             children,
+//           }) {
+//             const isExternal =
+//               href?.startsWith(
+//                 "http"
+//               );
+
+//             return (
+//               <a
+//                 href={
+//                   href
+//                 }
+//                 target={
+//                   isExternal
+//                     ? "_blank"
+//                     : undefined
+//                 }
+//                 rel={
+//                   isExternal
+//                     ? "noreferrer noopener"
+//                     : undefined
+//                 }
+//                 className="font-bold text-[#FF3F7F] underline decoration-pink-200 underline-offset-4 transition hover:text-[#E92C70]"
+//               >
+//                 {children}
+//               </a>
+//             );
+//           },
+
+//           img({
+//             src,
+
+//             alt,
+//           }) {
+//             return (
+//               <ArticleImage
+//                 src={
+//                   src
+//                 }
+//                 alt={
+//                   alt
+//                 }
+//               />
+//             );
+//           },
+
+//           hr() {
+//             return (
+//               <hr className="my-12 border-slate-200" />
+//             );
+//           },
+
+//           table({
+//             children,
+//           }) {
+//             return (
+//               <div className="my-8 overflow-x-auto rounded-2xl border border-slate-200">
+//                 <table className="min-w-full border-collapse text-left text-sm">
+//                   {children}
+//                 </table>
+//               </div>
+//             );
+//           },
+
+//           thead({
+//             children,
+//           }) {
+//             return (
+//               <thead className="bg-[#F8F5FF] text-[#2947C7]">
+//                 {children}
+//               </thead>
+//             );
+//           },
+
+//           th({
+//             children,
+//           }) {
+//             return (
+//               <th className="px-5 py-4 font-black">
+//                 {children}
+//               </th>
+//             );
+//           },
+
+//           td({
+//             children,
+//           }) {
+//             return (
+//               <td className="border-t border-slate-100 px-5 py-4 text-slate-600">
+//                 {children}
+//               </td>
+//             );
+//           },
+
+//           pre({
+//             children,
+//           }) {
+//             return (
+//               <pre className="my-8 overflow-x-auto rounded-2xl bg-[#172554] p-5 text-sm leading-7 text-white">
+//                 {children}
+//               </pre>
+//             );
+//           },
+
+//           code({
+//             children,
+
+//             className,
+
+//             ...props
+//           }) {
+//             if (
+//               className
+//             ) {
+//               return (
+//                 <code
+//                   className={
+//                     className
+//                   }
+//                   {...props}
+//                 >
+//                   {children}
+//                 </code>
+//               );
+//             }
+
+//             return (
+//               <code
+//                 className="rounded-md bg-purple-50 px-1.5 py-0.5 text-[0.9em] font-semibold text-[#7C3AED]"
+//                 {...props}
+//               >
+//                 {children}
+//               </code>
+//             );
+//           },
+//         }}
+//       >
+//         {content ||
+//           ""}
+//       </ReactMarkdown>
+//     </div>
+//   );
+// }
+function ArticleContent({ content }) {
   return (
-    <div className="article-content">
+    <div className="w-full">
       <ReactMarkdown
-        remarkPlugins={[
-          remarkGfm,
-        ]}
+        remarkPlugins={[remarkGfm]}
         components={{
-          h1({
-            children,
-          }) {
-            const title =
-              getNodeText(
-                children
-              );
+          h1({ children }) {
+            return (
+              <h1 className="mb-5 mt-12 text-3xl font-black leading-tight text-[#2947C7] sm:text-4xl">
+                {children}
+              </h1>
+            );
+          },
+
+          h2({ children }) {
+            const title = getNodeText(children);
 
             return (
               <h2
-                id={createHeadingId(
-                  title
-                )}
-                className="mb-5 mt-14 scroll-mt-28 text-3xl font-black leading-tight tracking-tight text-[#2947C7] sm:text-4xl"
+                id={createHeadingId(title)}
+                className="mb-5 mt-14 scroll-mt-28 text-2xl font-black leading-tight text-[#2947C7] sm:text-3xl"
               >
                 {children}
               </h2>
             );
           },
 
-          h2({
-            children,
-          }) {
-            const title =
-              getNodeText(
-                children
-              );
-
-            const displayAgeCards =
-              shouldShowAgeCards(
-                title,
-
-                content
-              );
-
-            const displayBenefitsCards =
-              shouldShowBenefitsCards(
-                title
-              );
-
-            const displayChecklist =
-              shouldShowChecklist(
-                title
-              );
-
-            return (
-              <>
-                <h2
-                  id={createHeadingId(
-                    title
-                  )}
-                  className="mb-5 mt-14 scroll-mt-28 text-[1.75rem] font-black leading-tight tracking-tight text-[#2947C7] sm:mt-16 sm:text-[2rem]"
-                >
-                  {children}
-                </h2>
-
-                {displayAgeCards && (
-                  <AgeGroupCards />
-                )}
-
-                {displayBenefitsCards && (
-                  <BenefitsCards />
-                )}
-
-                {displayChecklist && (
-                  <LearningChecklist />
-                )}
-              </>
-            );
-          },
-
-          h3({
-            children,
-          }) {
-            const title =
-              getNodeText(
-                children
-              );
-
-            const isNumberedBenefit =
-              /^\d+\.\s/.test(
-                title
-              );
+          h3({ children }) {
+            const title = getNodeText(children);
 
             return (
               <h3
-                id={createHeadingId(
-                  title
-                )}
-                className={`mb-4 mt-10 scroll-mt-28 font-extrabold leading-snug text-[#172554] ${
-                  isNumberedBenefit
-                    ? "text-lg sm:text-xl"
-                    : "text-xl sm:text-2xl"
-                }`}
+                id={createHeadingId(title)}
+                className="mb-4 mt-9 scroll-mt-28 text-xl font-extrabold text-[#172554] sm:text-2xl"
               >
                 {children}
               </h3>
             );
           },
 
-          h4({
-            children,
-          }) {
-            const title =
-              getNodeText(
-                children
-              );
-
-            return (
-              <h4
-                id={createHeadingId(
-                  title
-                )}
-                className="mb-3 mt-8 scroll-mt-28 text-lg font-bold text-[#172554]"
-              >
-                {children}
-              </h4>
-            );
-          },
-
-          p({
-            children,
-
-            node,
-          }) {
+          p({ children, node }) {
             const containsImage =
               node?.children?.some(
-                (child) =>
-                  child.tagName ===
-                  "img"
+                (child) => child.tagName === "img"
               );
 
-            if (
-              containsImage
-            ) {
-              return (
-                <>
-                  {children}
-                </>
-              );
+            if (containsImage) {
+              return <>{children}</>;
             }
 
             return (
-              <p className="my-5 text-[16px] leading-[1.95] text-slate-600 sm:text-[17px]">
+              <p className="my-5 text-base leading-8 text-slate-600 sm:text-lg">
                 {children}
               </p>
             );
           },
 
-          strong({
-            children,
-          }) {
+          ul({ children }) {
+            return (
+              <ul className="my-6 list-disc space-y-3 pl-7 marker:text-[#FF3F7F]">
+                {children}
+              </ul>
+            );
+          },
+
+          ol({ children }) {
+            return (
+              <ol className="my-6 list-decimal space-y-3 pl-7 marker:font-bold marker:text-[#FF3F7F]">
+                {children}
+              </ol>
+            );
+          },
+
+          li({ children }) {
+            return (
+              <li className="pl-1 text-base leading-8 text-slate-600 sm:text-lg">
+                {children}
+              </li>
+            );
+          },
+
+          strong({ children }) {
             return (
               <strong className="font-extrabold text-[#172554]">
                 {children}
@@ -846,198 +1131,54 @@ function ArticleContent({
             );
           },
 
-          em({
-            children,
-          }) {
+          blockquote({ children }) {
             return (
-              <em className="text-slate-700">
+              <blockquote className="my-9 rounded-r-2xl border-l-4 border-[#FF3F7F] bg-[#F8F4FF] px-6 py-4 text-lg font-semibold italic text-[#2947C7] [&_p]:my-0">
                 {children}
-              </em>
+              </blockquote>
             );
           },
 
-          ul({
-            children,
-          }) {
+          img({ src, alt }) {
             return (
-              <ul className="my-7 list-disc space-y-3 pl-6 marker:text-[#FF3F7F]">
-                {children}
-              </ul>
+              <figure className="my-10 sm:my-14">
+                <div className="overflow-hidden rounded-[1.75rem] border border-purple-100 bg-[#F8F5FF] shadow-lg shadow-purple-900/5">
+                  <img
+                    src={src}
+                    alt={alt || "Tech Talk Hub article image"}
+                    loading="lazy"
+                    className="block h-auto w-full object-contain"
+                  />
+                </div>
+
+                {alt && (
+                  <figcaption className="mt-3 text-center text-sm italic text-slate-400">
+                    {alt}
+                  </figcaption>
+                )}
+              </figure>
             );
           },
 
-          ol({
-            children,
-          }) {
-            return (
-              <ol className="my-7 list-decimal space-y-3 pl-6 marker:font-bold marker:text-[#FF3F7F]">
-                {children}
-              </ol>
-            );
-          },
-
-          li({
-            children,
-          }) {
-            return (
-              <li className="pl-2 text-[16px] leading-8 text-slate-600 sm:text-[17px] [&_p]:my-0">
-                {children}
-              </li>
-            );
-          },
-
-          blockquote({
-            children,
-          }) {
-            return (
-              <FeaturedQuote>
-                {children}
-              </FeaturedQuote>
-            );
-          },
-
-          a({
-            href,
-
-            children,
-          }) {
-            const isExternal =
-              href?.startsWith(
-                "http"
-              );
-
+          a({ href, children }) {
             return (
               <a
-                href={
-                  href
-                }
+                href={href}
                 target={
-                  isExternal
+                  href?.startsWith("http")
                     ? "_blank"
                     : undefined
                 }
-                rel={
-                  isExternal
-                    ? "noreferrer noopener"
-                    : undefined
-                }
-                className="font-bold text-[#FF3F7F] underline decoration-pink-200 underline-offset-4 transition hover:text-[#E92C70]"
+                rel="noopener noreferrer"
+                className="font-bold text-[#FF3F7F] underline decoration-pink-200 underline-offset-4"
               >
                 {children}
               </a>
             );
           },
-
-          img({
-            src,
-
-            alt,
-          }) {
-            return (
-              <ArticleImage
-                src={
-                  src
-                }
-                alt={
-                  alt
-                }
-              />
-            );
-          },
-
-          hr() {
-            return (
-              <hr className="my-12 border-slate-200" />
-            );
-          },
-
-          table({
-            children,
-          }) {
-            return (
-              <div className="my-8 overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="min-w-full border-collapse text-left text-sm">
-                  {children}
-                </table>
-              </div>
-            );
-          },
-
-          thead({
-            children,
-          }) {
-            return (
-              <thead className="bg-[#F8F5FF] text-[#2947C7]">
-                {children}
-              </thead>
-            );
-          },
-
-          th({
-            children,
-          }) {
-            return (
-              <th className="px-5 py-4 font-black">
-                {children}
-              </th>
-            );
-          },
-
-          td({
-            children,
-          }) {
-            return (
-              <td className="border-t border-slate-100 px-5 py-4 text-slate-600">
-                {children}
-              </td>
-            );
-          },
-
-          pre({
-            children,
-          }) {
-            return (
-              <pre className="my-8 overflow-x-auto rounded-2xl bg-[#172554] p-5 text-sm leading-7 text-white">
-                {children}
-              </pre>
-            );
-          },
-
-          code({
-            children,
-
-            className,
-
-            ...props
-          }) {
-            if (
-              className
-            ) {
-              return (
-                <code
-                  className={
-                    className
-                  }
-                  {...props}
-                >
-                  {children}
-                </code>
-              );
-            }
-
-            return (
-              <code
-                className="rounded-md bg-purple-50 px-1.5 py-0.5 text-[0.9em] font-semibold text-[#7C3AED]"
-                {...props}
-              >
-                {children}
-              </code>
-            );
-          },
         }}
       >
-        {content ||
-          ""}
+        {content || ""}
       </ReactMarkdown>
     </div>
   );
@@ -1802,11 +1943,7 @@ export default async function BlogPostPage({
               Parent-friendly guide
             </div>
 
-            <ArticleContent
-              content={
-                post.content
-              }
-            />
+          <ArticleContent content={post.content} />
 
             <ArticleCallToAction
               image={
