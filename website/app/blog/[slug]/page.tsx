@@ -1582,7 +1582,8 @@ export default async function BlogPostPage({
         }}
       />
 
-      <header className="relative overflow-hidden bg-gradient-to-br from-white via-[#FCFAFF] to-[#F4EEFF] px-5 pb-20 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8">
+      {/*<header className="relative overflow-hidden bg-gradient-to-br from-white via-[#FCFAFF] to-[#F4EEFF] px-5 pb-20 pt-28 sm:px-6 sm:pb-24 sm:pt-32 lg:px-8">*/}
+        <header className="relative overflow-hidden bg-gradient-to-br from-white via-[#FCFAFF] to-[#F4EEFF] px-5 pb-10 pt-16 sm:px-6 sm:pb-12 sm:pt-20 lg:px-8">
         <div className="pointer-events-none absolute -left-36 top-14 h-80 w-80 rounded-full bg-[#9B6CFF]/10 blur-[110px]" />
 
         <div className="pointer-events-none absolute -right-28 top-0 h-96 w-96 rounded-full bg-[#FF3F7F]/10 blur-[120px]" />
@@ -1590,7 +1591,8 @@ export default async function BlogPostPage({
         <div className="relative mx-auto max-w-5xl">
           <Link
             href="/blog"
-            className="mb-9 inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-[#FF3F7F]"
+            // className="mb-9 inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-[#FF3F7F]"
+            className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-[#FF3F7F]"
           >
             <ArrowLeft
               size={17}
@@ -1611,19 +1613,26 @@ export default async function BlogPostPage({
                 "Tech Talk Hub"}
             </span>
 
-            <h1 className="mt-6 text-[2.4rem] font-black leading-[1.08] tracking-tight text-[#2947C7] sm:text-5xl lg:text-[4rem]">
+         {/*   <h1 className="mt-6 text-[2.4rem] font-black leading-[1.08] tracking-tight text-[#2947C7] sm:text-5xl lg:text-[4rem]">
               {post.title}
-            </h1>
+            </h1>*/}
+            <h1 className="mt-3 text-3xl font-black leading-[1.08] tracking-tight text-[#2947C7] sm:text-4xl lg:text-5xl">
+  {post.title}
+</h1>
 
             {post.excerpt && (
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600 sm:text-xl">
-                {
-                  post.excerpt
-                }
-              </p>
+              // <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600 sm:text-xl">
+              //   {
+              //     post.excerpt
+              //   }
+              // </p>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
+  {post.excerpt}
+</p>
             )}
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-500">
+            {/*<div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-500">*/}
+            <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-500">
               <span className="flex items-center gap-2">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-[#7651EF]">
                   <UserRound
@@ -1659,7 +1668,8 @@ export default async function BlogPostPage({
       </header>
 
       {post.cover_image_url && (
-        <section className="relative z-10 mx-auto -mt-10 max-w-6xl px-4 sm:-mt-14 sm:px-6 lg:px-8">
+        // <section className="relative z-10 mx-auto -mt-10 max-w-6xl px-4 sm:-mt-14 sm:px-6 lg:px-8">
+        <section className="relative z-10 mx-auto -mt-6 max-w-6xl px-4 sm:-mt-8 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-[1.5rem] border border-white/80 bg-white shadow-2xl shadow-purple-900/10 sm:rounded-[2rem]">
             <div className="relative aspect-[16/9]">
               <Image
@@ -1722,7 +1732,8 @@ export default async function BlogPostPage({
             <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6">
               <Link
                 href="/blog"
-                className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-[#7651EF]"
+                // className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-[#7651EF]"
+                className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-[#FF3F7F]"
               >
                 <ArrowLeft
                   size={16}
